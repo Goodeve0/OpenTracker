@@ -70,6 +70,9 @@ importers:
       '@types/koa__router':
         specifier: ^12.0.5
         version: 12.0.5
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
 packages:
 
