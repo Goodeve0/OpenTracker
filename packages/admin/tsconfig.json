@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    // 目标 JS 版本（适配大部分浏览器）
+    "target": "ES6",
+    // 模块系统（适配 Vite 的 ES 模块）
+    "module": "ESNext",
+    // 模块解析方式（Node 风格，支持路径别名）
+    "moduleResolution": "Node",
+    // 允许 JS 和 TS 混合使用（迁移期友好，可选）
+    "allowJs": true,
+    // 开启严格模式（推荐，保证类型严谨）
+    "strict": true,
+    // 允许隐式 any 类型（迁移期可选，后续建议关闭）
+    "noImplicitAny": false,
+    // 支持 JSX 语法（React 必须）
+    "jsx": "react-jsx",
+    // 生成类型声明文件（可选，适合封装组件库）
+    "declaration": true,
+    // 类型声明文件输出目录
+    "declarationDir": "dist/types",
+    // 允许导入 JSON 文件
+    "resolveJsonModule": true,
+    // 跳过库类型检查（提升编译速度）
+    "skipLibCheck": true,
+    // 允许不同模块间的类型兼容
+    "esModuleInterop": true,
+    // 路径别名（和 vite.config.js 中的 @ 对应，避免 TS 报错）
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  // 指定 TS 需要编译的文件范围
+  "include": ["src/**/*", "vite.config.ts"],
+  // 排除不需要编译的文件
+  "exclude": ["node_modules", "dist"]
+}

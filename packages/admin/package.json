@@ -1,10 +1,13 @@
 {
   "name": "@opentracker/admin",
+  "type": "module",
   "version": "0.0.1",
   "description": "OpenTracker Admin - 管理后台",
   "scripts": {
-    "dev": "echo 'Admin dev script'",
-    "build": "echo 'Admin build script'"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "mock": "json-server --watch mock/db.json --port 3001 --middlewares mock/auth-middleware.js"
   },
   "keywords": [
     "tracker",
@@ -12,5 +15,24 @@
     "dashboard"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "antd": "^5.28.1",
+    "axios": "^1.13.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/antd": "^1.0.4",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-router-dom": "^5.3.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "@vitejs/plugin-react-swc": "^4.2.2",
+    "eslint-plugin-react": "^7.37.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2"
+  }
 }

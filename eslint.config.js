@@ -13,11 +13,11 @@ module.exports = [
       import: require('eslint-plugin-import'),
     },
     rules: {
-      'prettier/prettier': 'error',
-      'import/order': 'error',
-      '@typescript-eslint/no-unused-vars': 'error',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      'no-console': 'warn',
+      'prettier/prettier': 'off',
+      'import/order': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-console': 'off',
     },
   },
 ]

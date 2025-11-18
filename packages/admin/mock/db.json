@@ -1,0 +1,46 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "username": "admin",
+      "password": "123456",
+      "role": "admin"
+    },
+    {
+      "id": "6ec1",
+      "username": "jack",
+      "password": "123",
+      "role": "user"
+    },
+    {
+      "id": "1300",
+      "username": "jira",
+      "password": "111",
+      "role": "user"
+    },
+    {
+      "id": "9b8d",
+      "username": "1",
+      "password": "123456",
+      "role": "user"
+    },
+    {
+      "id": "d2ed",
+      "username": "2",
+      "password": "222",
+      "role": "user"
+    },
+    {
+      "id": "0ca4",
+      "username": "11",
+      "password": "2111",
+      "role": "user"
+    },
+    {
+      "id": "ec00",
+      "username": "aa",
+      "password": "aaa",
+      "role": "user"
+    }
+  ]
+}
