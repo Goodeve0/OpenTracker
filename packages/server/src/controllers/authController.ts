@@ -2,6 +2,7 @@ import { Context } from 'koa'
 import bcrypt from 'bcryptjs'
 import { IRegisterRequest, ILoginRequest, IApiResponse, IAuthResponse } from '../types'
 import { validatePassword, validateUsername } from '../utils/validation'
+import { JWTUtil, TokenPayload } from '../utils/jwt'
 
 // 临时内存存储
 const users: any[] = []
@@ -59,12 +60,21 @@ class AuthController {
 
       console.log('新用户注册成功:', username)
 
-      // 直接返回用户信息
+      // 生成 Token
+      const tokenPayload: TokenPayload = {
+        userId: user.id,
+        username: user.username,
+      }
+      const token = JWTUtil.generateToken(tokenPayload)
+
+      // 返回用户信息和token
       const responseData: IAuthResponse = {
         user: {
           id: user.id,
           username: user.username,
         },
+        token,
+        expiresIn: '7d',
       }
 
       ctx.body = this.createResponse(200, '注册成功', responseData)
@@ -106,12 +116,21 @@ class AuthController {
 
       console.log('用户登录成功:', user.username)
 
-      // 直接返回用户信息
+      // 生成 Token
+      const tokenPayload: TokenPayload = {
+        userId: user.id,
+        username: user.username,
+      }
+      const token = JWTUtil.generateToken(tokenPayload)
+
+      // 返回用户信息和token
       const responseData: IAuthResponse = {
         user: {
           id: user.id,
           username: user.username,
         },
+        token,
+        expiresIn: '7d',
       }
 
       ctx.body = this.createResponse(200, '登录成功', responseData)

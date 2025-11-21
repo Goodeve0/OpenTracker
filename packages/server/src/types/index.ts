@@ -19,6 +19,8 @@ export interface IAuthResponse {
     id: string
     username: string
   }
+  token?: string
+  expiresIn?: string
 }
 
 //通用响应类型
