@@ -1,0 +1,267 @@
+.user-profile-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+/* 个人信息展示部分 */
+.user-info-card {
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.avatar-section {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.avatar-section .ant-avatar {
+  border: 4px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin-bottom: 16px;
+}
+
+/* 左侧头像上传样式 */
+.avatar-section .ant-upload {
+  display: inline-block;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.avatar-section .ant-upload:hover {
+  opacity: 0.8;
+}
+
+.user-info {
+  text-align: left;
+}
+
+.username {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  text-align: center;
+  color: #333;
+}
+
+/* 左侧个人简介样式 */
+.user-info-card .bio-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  text-align: left;
+}
+
+.user-info-card .bio-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.user-info-card .bio-section p {
+  color: #595959;
+  line-height: 1.6;
+  font-size: 13px;
+}
+
+/* 右侧用户详情样式 */
+.user-details-section {
+  background-color: #fafafa;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-weight: 500;
+  color: #666;
+  font-size: 14px;
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.info-value {
+  color: #333;
+  font-size: 14px;
+}
+
+.modify-link {
+  color: #1890ff;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.modify-link:hover {
+  text-decoration: underline;
+}
+
+.info-section {
+  margin-bottom: 24px;
+}
+
+/* 表单部分 */
+.avatar-upload-text {
+  margin-top: 8px;
+  color: #1890ff;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.avatar-section .ant-upload:hover .avatar-upload-text {
+  opacity: 1;
+}
+
+/* 密码修改部分 */
+.password-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.password-card h2 {
+  color: #262626;
+  font-size: 20px;
+}
+
+/* 项目列表部分 */
+.projects-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.projects-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.projects-header p {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+/* 表格样式优化 */
+.ant-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+  color: #262626;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background-color: #f5f5f5;
+}
+
+/* 按钮样式优化 */
+.ant-btn {
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .user-profile-container {
+    padding: 16px;
+  }
+
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .info-label {
+    margin-bottom: 8px;
+    width: auto;
+  }
+
+  .avatar-section {
+    margin-bottom: 16px;
+  }
+
+  .projects-header h2 {
+    font-size: 20px;
+  }
+
+  .projects-header p {
+    font-size: 12px;
+  }
+
+  .user-info-card {
+    margin-bottom: 24px;
+  }
+
+  .username {
+    font-size: 18px;
+  }
+}
+
+/* 标签页样式 */
+.ant-tabs {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.ant-tabs-tab {
+  font-weight: 500;
+  padding: 16px 24px;
+}
+
+.ant-tabs-tab-active {
+  font-weight: 600;
+}
+
+.ant-tabs-content-holder {
+  border: none;
+}
+
+.ant-tabs-content {
+  border: none;
+}
+
+.ant-tabs-tabpane {
+  border: none;
+}
+
+/* 卡片样式 */
+.ant-card {
+  border-radius: 8px;
+  box-shadow: none;
+  margin-bottom: 16px;
+  border: none;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  border-radius: 8px 8px 0 0;
+}
+
+/* 表单标签样式 */
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #262626;
+}
