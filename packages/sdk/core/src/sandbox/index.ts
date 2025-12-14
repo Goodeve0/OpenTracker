@@ -1,6 +1,6 @@
 import { ProxySandbox } from './ProxySandbox'
-import type { TrackerConfig } from '../types/src/core/config'
-import { Tracker } from '../core/src/reporter'
+import type { TrackerConfig } from '../../../types/src/core/config'
+import { Tracker } from '../../src/reporter'
 
 // 全局沙箱单例（避免重复初始化）
 let sandboxInstance: ProxySandbox | null = null
