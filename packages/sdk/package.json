@@ -1,12 +1,13 @@
 {
   "name": "@opentracker/sdk",
   "version": "0.0.1",
+  "type": "module",
   "description": "OpenTracker SDK - 客户端追踪SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "echo 'SDK dev script'",
-    "build": "echo 'SDK build script'"
+    "dev": "vite",
+    "build": "vite build"
   },
   "keywords": [
     "tracker",
@@ -15,7 +16,12 @@
   ],
   "author": "",
   "license": "MIT",
+<<<<<<< HEAD
   "dependencies": {
     "web-vitals": "^5.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2"
   }
 }

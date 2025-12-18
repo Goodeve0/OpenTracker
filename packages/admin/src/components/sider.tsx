@@ -64,8 +64,8 @@ const subItems: MenuItem[] = [
     icon: <CloseCircleOutlined />,
     label: '错误分析',
     children: [
-      { key: 'sub51', label: 'option 1' },
-      { key: 'sub52', label: 'option 2' },
+      { key: 'sub51', label: '错误分析总览' },
+      { key: 'sub52', label: '错误日志查询' },
     ],
   },
   {

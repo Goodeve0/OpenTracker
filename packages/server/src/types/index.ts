@@ -23,6 +23,35 @@ export interface IAuthResponse {
   expiresIn?: string
 }
 
+export interface IErrorlog {
+  errorType: string
+  message: string
+  stack?: string
+  time?: number
+  [key: string]: any // 扩展字段
+}
+
+export interface IBehaviorLog {
+  event: string
+  target?: string
+  time?: number
+  [key: string]: any
+}
+
+export interface IPerformanceLog {
+  loadTime?: number
+  firstPaint?: number
+  time?: number
+  [key: string]: any
+}
+
+export interface IBlankScreenLog {
+  screen: string
+  selector?: string
+  time?: number
+  [key: string]: any
+}
+
 //通用响应类型
 export interface IApiResponse<T = any> {
   code: number

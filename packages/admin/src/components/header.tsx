@@ -138,8 +138,18 @@ const HeaderComponent: React.FC = () => {
         <Dropdown
           menu={{
             items: [
-              { key: '1', label: <span>个人中心</span>, icon: <UserOutlined /> },
-              { key: '2', label: <span>账户设置</span>, icon: <SettingOutlined /> },
+              {
+                key: '1',
+                label: <span>个人中心</span>,
+                icon: <UserOutlined />,
+                onClick: () => navigate('/user'),
+              },
+              {
+                key: '2',
+                label: <span>账户设置</span>,
+                icon: <SettingOutlined />,
+                onClick: () => navigate('/home/settings'),
+              },
               {
                 key: '3',
                 label: <span style={{ color: '#ff4d4f' }}>退出登录</span>,

@@ -41,6 +41,124 @@
       "username": "aa",
       "password": "aaa",
       "role": "user"
+    },
+    {
+      "id": "ef62",
+      "username": "admin1",
+      "password": "333",
+      "role": "user"
+    }
+  ],
+  "errors": [
+    {
+      "id": "1",
+      "type": "js",
+      "message": "Cannot read property \"length\" of undefined",
+      "url": "https://example.com/products",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "timestamp": "2024-01-15 10:23:45",
+      "userId": "user_001",
+      "status": "unresolved",
+      "stack": "TypeError: Cannot read property \"length\" of undefined\n    at ProductList.render (ProductList.js:45:12)"
+    },
+    {
+      "id": "2",
+      "type": "js",
+      "message": "Uncaught ReferenceError: variable is not defined",
+      "url": "https://example.com/checkout",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+      "timestamp": "2024-01-15 09:15:32",
+      "userId": "user_002",
+      "status": "unresolved",
+      "stack": "ReferenceError: variable is not defined\n    at checkout.js:23:5"
+    },
+    {
+      "id": "3",
+      "type": "api",
+      "message": "Request failed with status code 500",
+      "url": "https://example.com/api/orders",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "timestamp": "2024-01-15 11:45:12",
+      "userId": "user_003",
+      "status": "unresolved",
+      "statusCode": 500,
+      "method": "POST"
+    },
+    {
+      "id": "4",
+      "type": "api",
+      "message": "Network Error: Failed to fetch",
+      "url": "https://example.com/api/users",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)",
+      "timestamp": "2024-01-15 08:30:20",
+      "userId": "user_004",
+      "status": "resolved",
+      "statusCode": 0,
+      "method": "GET"
+    },
+    {
+      "id": "5",
+      "type": "api",
+      "message": "Request timeout after 30000ms",
+      "url": "https://example.com/api/products",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "timestamp": "2024-01-14 16:22:10",
+      "userId": "user_005",
+      "status": "unresolved",
+      "method": "GET"
+    },
+    {
+      "id": "6",
+      "type": "behavior",
+      "message": "用户连续点击按钮超过10次",
+      "url": "https://example.com/payment",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "timestamp": "2024-01-15 12:10:05",
+      "userId": "user_006",
+      "status": "unresolved"
+    },
+    {
+      "id": "7",
+      "type": "behavior",
+      "message": "页面停留时间异常（超过30分钟无操作）",
+      "url": "https://example.com/dashboard",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+      "timestamp": "2024-01-14 20:15:30",
+      "userId": "user_007",
+      "status": "resolved"
+    },
+    {
+      "id": "8",
+      "type": "cors",
+      "message": "Access to fetch at blocked by CORS policy",
+      "url": "https://example.com/api/external",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "timestamp": "2024-01-15 13:25:40",
+      "userId": "user_008",
+      "status": "unresolved"
+    },
+    {
+      "id": "9",
+      "type": "js",
+      "message": "Maximum call stack size exceeded",
+      "url": "https://example.com/recursive",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "timestamp": "2024-01-13 14:50:15",
+      "userId": "user_009",
+      "status": "resolved",
+      "stack": "RangeError: Maximum call stack size exceeded\n    at recursiveFunction (recursive.js:10:5)"
+    },
+    {
+      "id": "10",
+      "type": "api",
+      "message": "401 Unauthorized",
+      "url": "https://example.com/api/protected",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)",
+      "timestamp": "2024-01-15 07:18:25",
+      "userId": "user_010",
+      "status": "unresolved",
+      "statusCode": 401,
+      "method": "GET"
     }
   ]
 }

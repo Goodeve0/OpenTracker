@@ -1,4 +1,4 @@
-import { EventTypes } from '../../common';
+import { EventTypes } from '../../common/index.js'
 
 // 配置接口
 export interface OpenTrackerConfig {

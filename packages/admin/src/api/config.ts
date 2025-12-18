@@ -5,6 +5,7 @@ export const API_ENDPOINTS = {
   health: '/health',
   login: '/api/auth/login',
   register: '/api/auth/register',
+  errors: '/api/errors',
 }
 
 // API 响应格式

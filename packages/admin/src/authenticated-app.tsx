@@ -8,7 +8,8 @@ import DashboardPage from '@/screens/dashboard'
 import VisitorPage from '@/screens/visitor'
 import BehaviorPage from '@/screens/behavior'
 import CustomerPage from '@/screens/customer'
-import ErrorPage from '@/screens/error'
+import ErrorPage from '@/screens/error/error-overview'
+import ErrorLogsPage from '@/screens/error/error-logs'
 import PerformancePage from '@/screens/performance'
 import BlankPage from '@/screens/blank'
 
@@ -30,6 +31,7 @@ const AuthenticatedApp: React.FC = () => {
       sub31: '/home/behavior',
       sub41: '/home/customer',
       sub51: '/home/error',
+      sub52: '/home/error/logs',
       sub61: '/home/performance',
       sub71: '/home/blank',
     }
@@ -67,6 +69,7 @@ const AuthenticatedApp: React.FC = () => {
               <Route path="behavior" element={<BehaviorPage />} />
               <Route path="customer" element={<CustomerPage />} />
               <Route path="error" element={<ErrorPage />} />
+              <Route path="error/logs" element={<ErrorLogsPage />} />
               <Route path="performance" element={<PerformancePage />} />
               <Route path="blank" element={<BlankPage />} />
             </Routes>

@@ -3,6 +3,7 @@ import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import authRoutes from './routes/auth'
 import profileRoutes from './routes/profile'
+import trackRouter from './routes/track'
 
 //创建koa实例
 const app = new Koa()
@@ -54,8 +55,12 @@ app.use(async (ctx, next) => {
 // 注册路由
 app.use(authRoutes.routes())
 app.use(authRoutes.allowedMethods()) // 正确处理 405 等方法错误
+
 app.use(profileRoutes.routes())
 app.use(profileRoutes.allowedMethods())
+
+app.use(trackRouter.routes())
+app.use(trackRouter.allowedMethods())
 
 //启动服务器
 const PORT = process.env.PORT || 3000

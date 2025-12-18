@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     // 目标 JS 版本（适配大部分浏览器）
+    "lib": ["ES6", "DOM"],
     "target": "ES6",
     // 模块系统（适配 Vite 的 ES 模块）
     "module": "ESNext",
@@ -31,7 +32,7 @@
     }
   },
   // 指定 TS 需要编译的文件范围
-  "include": ["src/**/*", "vite.config.ts"],
+  "include": ["src/**/*", "mock/**/*", "vite.config.ts"],
   // 排除不需要编译的文件
   "exclude": ["node_modules", "dist"]
 }

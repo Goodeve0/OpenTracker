@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { getToken } from '@/utils/token'
 import UnauthenticatedApp from './unauthenticated-app' // 非认证页面（登录/注册）
 import AuthenticatedApp from './authenticated-app' // 认证后页面（主页）
+import UserProfilePage from '@/screens/user' // 个人资料页面
 
 // 路由守卫组件
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -62,6 +63,16 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <AuthenticatedApp />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 个人资料页面 - 直接放在根级，不嵌套在authenticated-app中 */}
+          <Route
+            path="/user"
+            element={
+              <ProtectedRoute>
+                <UserProfilePage />
               </ProtectedRoute>
             }
           />
