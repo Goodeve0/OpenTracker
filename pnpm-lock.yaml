@@ -140,7 +140,7 @@ importers:
         specifier: ^14.0.0
         version: 14.0.0
       '@prisma/client':
-        specifier: ^6.19.1
+        specifier: 6.19.1
         version: 6.19.1(prisma@6.19.1(typescript@5.9.3))(typescript@5.9.3)
       bcryptjs:
         specifier: ^3.0.3
@@ -171,7 +171,7 @@ importers:
         specifier: ^12.0.5
         version: 12.0.5
       prisma:
-        specifier: ^6.19.1
+        specifier: 6.19.1
         version: 6.19.1(typescript@5.9.3)
       ts-node:
         specifier: ^10.9.2
