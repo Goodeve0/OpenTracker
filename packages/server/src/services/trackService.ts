@@ -1,28 +1,62 @@
 import { IErrorlog, IBehaviorLog, IPerformanceLog, IBlankScreenLog } from '../types'
+import prisma from '../lib/prisma'
 
 class TrackService {
-  //临时内存存储
-  errorLogs: IErrorlog[] = []
-  behaviorLogs: IBehaviorLog[] = []
-  performanceLogs: IPerformanceLog[] = []
-  blankLogs: IBlankScreenLog[] = []
-
   //分类处理
-  handleReport(type: string, data: any) {
-    data.time = data.time || Date.now()
+  async handleReport(type: string, data: any) {
+    const timestamp = data.time ? new Date(data.time) : new Date()
 
     switch (type) {
       case 'error':
-        this.errorLogs.push(data)
+        await prisma.error.create({
+          data: {
+            errorType: data.errorType,
+            message: data.message,
+            stack: data.stack,
+            pageUrl: data.pageUrl,
+            userAgent: data.userAgent,
+            timestamp,
+            extra: data,
+          },
+        })
         break
+
       case 'behavior':
-        this.behaviorLogs.push(data)
+        await prisma.behavior.create({
+          data: {
+            event: data.event,
+            target: data.target,
+            pageUrl: data.pageUrl,
+            userAgent: data.userAgent,
+            timestamp,
+            extra: data,
+          },
+        })
         break
+
       case 'performance':
-        this.performanceLogs.push(data)
+        await prisma.performance.create({
+          data: {
+            loadTime: data.loadTime,
+            domReady: data.domReady,
+            firstPaint: data.firstPaint,
+            pageUrl: data.pageUrl,
+            timestamp,
+            extra: data,
+          },
+        })
         break
+
       case 'blank':
-        this.blankLogs.push(data)
+        await prisma.blank_Screen.create({
+          data: {
+            isBlank: data.isBlank,
+            checkPoints: data.checkPoints,
+            pageUrl: data.pageUrl,
+            timestamp,
+            extra: data,
+          },
+        })
         break
       default:
         console.warn('未知上报类型：', type)
@@ -30,13 +64,11 @@ class TrackService {
   }
 
   //批量处理
-  handleBatch(reports: { type: string; data: any }[]) {
-    for (const item of reports) {
-      this.handleReport(item.type, item.data)
-    }
+  async handleBatch(reports: { type: string; data: any }[]) {
+    await Promise.all(reports.map((item) => this.handleReport(item.type, item.data)))
   }
 
-  queryLogs(params: {
+  async queryLogs(params: {
     category: 'error' | 'behavior' | 'performance' | 'blank'
     startTime?: number
     endTime?: number
@@ -46,22 +78,37 @@ class TrackService {
   }) {
     const { category, startTime, endTime, keyword, page = 1, pageSize = 20 } = params
 
-    let target: any[] = []
+    const skip = (page - 1) * pageSize
+    const take = pageSize
+
+    const timeFilter =
+      startTime || endTime
+        ? {
+            gte: startTime ? new Date(startTime) : undefined,
+            lte: endTime ? new Date(endTime) : undefined,
+          }
+        : undefined
+
+    let result
 
     // 根据分类确定数据源
     switch (category) {
       case 'error':
-        target = this.errorLogs
+        result = await this.queryError({ timeFilter, keyword, skip, take })
         break
+
       case 'behavior':
-        target = this.behaviorLogs
+        result = await this.queryBehavior({ timeFilter, keyword, skip, take })
         break
+
       case 'performance':
-        target = this.performanceLogs
+        result = await this.queryPerformance({ timeFilter, skip, take })
         break
+
       case 'blank':
-        target = this.blankLogs
+        result = await this.queryBlank({ timeFilter, skip, take })
         break
+
       default:
         // 如果分类不存在，返回空结构
         return {
@@ -71,32 +118,99 @@ class TrackService {
           list: [],
         }
     }
-
-    // result 用于承载过滤后的最终数据
-    let result = target
-
-    if (startTime) {
-      result = result.filter((item) => item.time >= startTime)
+    return {
+      total: result.total,
+      page,
+      pageSize,
+      list: result.list,
     }
-
-    if (endTime) {
-      result = result.filter((item) => item.time <= endTime)
+  }
+  private async queryError({ timeFilter, keyword, skip, take }: any) {
+    const where: any = {
+      timestamp: timeFilter,
     }
 
     if (keyword) {
-      result = result.filter((item) => JSON.stringify(item).includes(keyword))
+      where.OR = [
+        { message: { contains: keyword } },
+        { errorType: { contains: keyword } },
+        { pageUrl: { contains: keyword } },
+      ]
     }
 
-    const total = result.length
-    const start = (page - 1) * pageSize
-    const list = result.slice(start, start + pageSize)
+    const [total, list] = await Promise.all([
+      prisma.error.count({ where }),
+      prisma.error.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { timestamp: 'desc' },
+      }),
+    ])
 
-    return {
-      total,
-      page,
-      pageSize,
-      list,
+    return { total, list }
+  }
+
+  private async queryBehavior({ timeFilter, keyword, skip, take }: any) {
+    const where: any = {
+      timestamp: timeFilter,
     }
+
+    if (keyword) {
+      where.OR = [
+        { event: { contains: keyword } },
+        { target: { contains: keyword } },
+        { pageUrl: { contains: keyword } },
+      ]
+    }
+
+    const [total, list] = await Promise.all([
+      prisma.behavior.count({ where }),
+      prisma.behavior.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { timestamp: 'desc' },
+      }),
+    ])
+
+    return { total, list }
+  }
+
+  private async queryPerformance({ timeFilter, skip, take }: any) {
+    const where: any = {
+      timestamp: timeFilter,
+    }
+
+    const [total, list] = await Promise.all([
+      prisma.performance.count({ where }),
+      prisma.performance.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { timestamp: 'desc' },
+      }),
+    ])
+
+    return { total, list }
+  }
+
+  private async queryBlank({ timeFilter, skip, take }: any) {
+    const where: any = {
+      timestamp: timeFilter,
+    }
+
+    const [total, list] = await Promise.all([
+      prisma.blank_Screen.count({ where }),
+      prisma.blank_Screen.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { timestamp: 'desc' },
+      }),
+    ])
+
+    return { total, list }
   }
 }
 

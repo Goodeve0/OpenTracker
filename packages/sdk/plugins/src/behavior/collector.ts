@@ -1,5 +1,5 @@
 // 行为监控数据收集器
-import { IMetrics, ClickData, PVData, PageInfo, OriginInfo, BehaviorStore } from './types'
+import { IMetrics, ClickData, PVData, PageInfo, OriginInfo, BehaviorStore } from './types.js'
 
 // 重写历史记录函数
 export function wrHistory() {
@@ -31,6 +31,16 @@ export function wrHistory() {
   })
 }
 
+// 设备信息接口
+interface DeviceInfo {
+  deviceType: 'desktop' | 'mobile' | 'tablet'
+  browser: string
+  browserVersion: string
+  os: string
+  osVersion: string
+  userAgent: string
+}
+
 // 基础收集器类
 class BaseCollector {
   protected sendHandler: (data: IMetrics) => void
@@ -39,11 +49,85 @@ class BaseCollector {
     this.sendHandler = sendHandler
   }
 
+  // 获取设备信息
+  protected getDeviceInfo(): DeviceInfo {
+    const userAgent = navigator.userAgent
+    const platform = navigator.platform
+    let deviceType: 'desktop' | 'mobile' | 'tablet' = 'desktop'
+    let browser = 'Unknown'
+    let browserVersion = 'Unknown'
+    let os = 'Unknown'
+    let osVersion = 'Unknown'
+
+    // 检测设备类型
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)) {
+      if (userAgent.includes('iPad')) {
+        deviceType = 'tablet'
+      } else {
+        deviceType = 'mobile'
+      }
+    }
+
+    // 检测操作系统
+    if (userAgent.includes('Windows')) {
+      os = 'Windows'
+      const match = userAgent.match(/Windows NT (\d+\.\d+)/)
+      osVersion = match?.[1] ?? 'Unknown'
+    } else if (userAgent.includes('Macintosh')) {
+      os = 'macOS'
+      const match = userAgent.match(/Mac OS X (\d+_\d+(_\d+)?)/)
+      osVersion = match?.[1]?.replace(/_/g, '.') ?? 'Unknown'
+    } else if (userAgent.includes('Linux')) {
+      os = 'Linux'
+    } else if (userAgent.includes('Android')) {
+      os = 'Android'
+      const match = userAgent.match(/Android (\d+(\.\d+)*)/)
+      osVersion = match?.[1] ?? 'Unknown'
+    } else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+      os = 'iOS'
+      const match = userAgent.match(/iPhone OS (\d+_\d+(_\d+)?)/)
+      osVersion = match?.[1]?.replace(/_/g, '.') ?? 'Unknown'
+    }
+
+    // 检测浏览器
+    if (userAgent.includes('Chrome')) {
+      browser = 'Chrome'
+      const match = userAgent.match(/Chrome\/(\d+\.\d+)/)
+      browserVersion = match?.[1] ?? 'Unknown'
+    } else if (userAgent.includes('Firefox')) {
+      browser = 'Firefox'
+      const match = userAgent.match(/Firefox\/(\d+\.\d+)/)
+      browserVersion = match?.[1] ?? 'Unknown'
+    } else if (userAgent.includes('Safari')) {
+      browser = 'Safari'
+      const match = userAgent.match(/Version\/(\d+\.\d+)/)
+      browserVersion = match?.[1] ?? 'Unknown'
+    } else if (userAgent.includes('Edge')) {
+      browser = 'Edge'
+      const match = userAgent.match(/Edg\/(\d+\.\d+)/)
+      browserVersion = match?.[1] ?? 'Unknown'
+    } else if (userAgent.includes('Trident')) {
+      browser = 'Internet Explorer'
+      const match = userAgent.match(/rv:(\d+\.\d+)/)
+      browserVersion = match?.[1] ?? 'Unknown'
+    }
+
+    return {
+      deviceType,
+      browser,
+      browserVersion,
+      os,
+      osVersion,
+      userAgent,
+    }
+  }
+
   // 获取扩展信息
-  protected getExtends(): { page: string; timestamp: number | string } {
+  protected getExtends(): { page: string; timestamp: number | string } & DeviceInfo {
     return {
       page: window.location.pathname,
       timestamp: new Date().getTime(),
+      ...this.getDeviceInfo(),
     }
   }
 
@@ -77,13 +161,47 @@ export class OriginInfoCollector extends BaseCollector {
 
 // PV收集器
 export class PVCollector extends BaseCollector {
+  private pageStartTime: number = 0
+  private unloadHandler: () => void
+
+  constructor(sendHandler: (data: IMetrics) => void) {
+    super(sendHandler)
+    this.unloadHandler = this.handleUnload.bind(this)
+  }
+
   collect(): void {
+    // 记录页面进入时间
+    this.pageStartTime = new Date().getTime()
+
     const pvData: PVData = {
       type: 'pv',
-      page: window.location.pathname,
-      timestamp: new Date().getTime(),
+      ...this.getExtends(),
     }
     this.sendHandler(pvData)
+
+    // 监听页面离开事件，计算停留时间
+    window.addEventListener('beforeunload', this.unloadHandler)
+    window.addEventListener('pagehide', this.unloadHandler)
+  }
+
+  private handleUnload(): void {
+    // 计算停留时间（毫秒）
+    const stayTime = new Date().getTime() - this.pageStartTime
+
+    // 只有停留时间大于1秒时才上报
+    if (stayTime > 1000) {
+      const stayTimeData: IMetrics = {
+        type: 'stayTime',
+        duration: stayTime,
+        startTime: this.pageStartTime,
+        ...this.getExtends(),
+      }
+      this.sendHandler(stayTimeData)
+    }
+
+    // 移除事件监听器
+    window.removeEventListener('beforeunload', this.unloadHandler)
+    window.removeEventListener('pagehide', this.unloadHandler)
   }
 }
 
@@ -116,8 +234,7 @@ export class ClickCollector extends BaseCollector {
         className: target.className,
         id: target.id,
         textContent: target.textContent ? target.textContent.slice(0, 100) : '',
-        page: window.location.pathname,
-        timestamp: new Date().getTime(),
+        ...this.getExtends(),
       }
 
       // 添加到行为记录
@@ -148,10 +265,9 @@ export class RouteChangeCollector extends BaseCollector {
   private handleRouteChange(): void {
     const routeChangeData: IMetrics = {
       type: 'routeChange',
-      page: window.location.pathname,
-      timestamp: new Date().getTime(),
       pathname: window.location.pathname,
       title: document.title,
+      ...this.getExtends(),
     }
     this.sendHandler(routeChangeData)
   }
@@ -261,6 +377,7 @@ export class HttpCollector extends BaseCollector {
       page: window.location.pathname,
       timestamp: new Date().getTime(),
       ...data,
+      ...this.getDeviceInfo(),
     }
     this.sendHandler(httpData)
   }

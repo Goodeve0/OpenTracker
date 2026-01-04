@@ -1,6 +1,7 @@
 // 导出核心类
 export { Tracker, LifecycleManager } from './tracker.js'
-
+export { PluginManager } from './plugin/index.js'
+export type { Plugin, PluginContext } from './plugin/index.js'
 // 导出生命周期相关类型
 export type {
   LifecycleHook,

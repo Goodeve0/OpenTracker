@@ -3,10 +3,7 @@ import bcrypt from 'bcryptjs'
 import { IRegisterRequest, ILoginRequest, IApiResponse, IAuthResponse } from '../types'
 import { validatePassword, validateUsername } from '../utils/validation'
 import { JWTUtil, TokenPayload } from '../utils/jwt'
-
-// 临时内存存储
-const users: any[] = []
-let userIdCounter = 1
+import prisma from '../lib/prisma'
 
 class AuthController {
   constructor() {
@@ -41,7 +38,9 @@ class AuthController {
 
     try {
       // 检查用户是否已存在
-      const existingUser = users.find((u) => u.username === username)
+      const existingUser = await prisma.users.findFirst({
+        where: { username },
+      })
       if (existingUser) {
         ctx.status = 409
         ctx.body = this.createResponse(409, '用户已存在')
@@ -49,29 +48,30 @@ class AuthController {
       }
 
       // 创建用户
-      const user = {
-        id: userIdCounter.toString(),
-        username,
-        password: await bcrypt.hash(password, 10),
-      }
+      const hashedPassword = await bcrypt.hash(password, 10)
+      const user = await prisma.users.create({
+        data: {
+          username,
+          password: hashedPassword,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      })
 
-      users.push(user)
-      userIdCounter++
-
-      console.log('新用户注册成功:', username)
+      console.log('新用户注册成功:', username, '用户ID:', user.id)
 
       // 生成 Token
       const tokenPayload: TokenPayload = {
-        userId: user.id,
-        username: user.username,
+        userId: user.id.toString(),
+        username: user.username || '',
       }
       const token = JWTUtil.generateToken(tokenPayload)
 
       // 返回用户信息和token
       const responseData: IAuthResponse = {
         user: {
-          id: user.id,
-          username: user.username,
+          id: user.id.toString(),
+          username: user.username || '',
         },
         token,
         expiresIn: '7d',
@@ -99,7 +99,9 @@ class AuthController {
 
     try {
       // 查找用户
-      const user = users.find((u) => u.username === login)
+      const user = await prisma.users.findFirst({
+        where: { username: login },
+      })
       if (!user) {
         ctx.status = 401
         ctx.body = this.createResponse(401, '用户不存在')
@@ -107,27 +109,27 @@ class AuthController {
       }
 
       // 验证密码
-      const isValidPassword = await bcrypt.compare(password, user.password)
+      const isValidPassword = await bcrypt.compare(password, user.password || '')
       if (!isValidPassword) {
         ctx.status = 401
         ctx.body = this.createResponse(401, '密码错误')
         return
       }
 
-      console.log('用户登录成功:', user.username)
+      console.log('用户登录成功:', user.username, '用户ID:', user.id)
 
       // 生成 Token
       const tokenPayload: TokenPayload = {
-        userId: user.id,
-        username: user.username,
+        userId: user.id.toString(),
+        username: user.username || '',
       }
       const token = JWTUtil.generateToken(tokenPayload)
 
       // 返回用户信息和token
       const responseData: IAuthResponse = {
         user: {
-          id: user.id,
-          username: user.username,
+          id: user.id.toString(),
+          username: user.username || '',
         },
         token,
         expiresIn: '7d',

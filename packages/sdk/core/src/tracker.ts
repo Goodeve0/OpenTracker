@@ -8,7 +8,8 @@ import {
   LifecycleHookFunction,
   LifecycleManagerConfig,
 } from '../../types/src/core/config.js'
-
+import { PluginManager } from './plugin/plugin-manager.js'
+import { PluginContext } from './plugin/types.js'
 export class LifecycleManager {
   private hooks: Map<LifecycleHook, LifecycleHookFunction[]> = new Map()
   private config: LifecycleManagerConfig
@@ -119,6 +120,7 @@ export class Tracker {
   private queueManager: QueueManager // 队列管理器实例
   private config: TrackerConfig
   private lifecycleManager: LifecycleManager // 生命周期管理器实例
+  private pluginManager!: PluginManager
 
   private constructor(config: TrackerConfig) {
     if (!config.apiKey || !config.serverUrl) {
@@ -138,6 +140,13 @@ export class Tracker {
     this.config = config
     this.queueManager = new QueueManager(queueConfig)
     this.lifecycleManager = new LifecycleManager()
+    const pluginContext: PluginContext = {
+      tracker: this,
+      config: this.config,
+      send: this.report.bind(this),
+    }
+    this.pluginManager = new PluginManager(pluginContext)
+    console.log('🧩 Tracker插件系统已初始化')
 
     // 设置初始用户ID
     if (config.userId) {
@@ -312,6 +321,35 @@ export class Tracker {
   // 获取配置
   public getConfig = (): TrackerConfig => {
     return this.config
+  }
+
+  // 插件管理方法
+  public registerPlugin = (plugin: any): void => {
+    this.pluginManager.registerPlugin(plugin)
+  }
+
+  public registerPlugins = (plugins: any[]): void => {
+    this.pluginManager.registerPlugins(plugins)
+  }
+
+  public loadPlugin = (pluginName: string): boolean => {
+    return this.pluginManager.loadPlugin(pluginName)
+  }
+
+  public loadAllPlugins = (): void => {
+    this.pluginManager.loadAllPlugins()
+  }
+
+  public stopPlugin = (pluginName: string): boolean => {
+    return this.pluginManager.stopPlugin(pluginName)
+  }
+
+  public stopAllPlugins = (): void => {
+    this.pluginManager.stopAllPlugins()
+  }
+
+  public getPluginManager = (): PluginManager => {
+    return this.pluginManager
   }
 
   // 清除实例（静态方法）

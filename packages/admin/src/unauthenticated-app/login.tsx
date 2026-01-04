@@ -58,8 +58,8 @@ const Login = () => {
       }
     } catch (err: any) {
       console.error('登录失败：', err)
-      // 处理400错误（用户名或密码错误等）
-      if (err.response?.status === 400) {
+      // 处理400和401错误（用户名或密码错误等）
+      if (err.response?.status === 400 || err.response?.status === 401) {
         // 检查是否有服务器返回的具体错误消息
         const serverMessage = err.response?.data?.message
         setErrorMsg(serverMessage || '用户名或密码错误')

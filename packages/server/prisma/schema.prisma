@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Behavior {
+  id        Int       @id @default(autoincrement())
+  event     String?   @db.VarChar(100)
+  target    String?   @db.VarChar(255)
+  timestamp DateTime? @db.Timestamp(6)
+  userAgent String?   @db.VarChar(255)
+  pageUrl   String?   @db.VarChar(255)
+  extra     Json?     @db.Json
+  createdAt DateTime? @db.Timestamp(6)
+
+  @@index([pageUrl], map: "idx_behavior_pageUrl")
+  @@index([timestamp], map: "idx_behavior_time")
+  @@index([event], map: "idx_event")
+  @@index([target], map: "idx_target")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model Blank_Screen {
+  id          Int       @id @default(autoincrement())
+  isBlank     Boolean?
+  checkPoints String?
+  timestamp   DateTime? @db.Timestamp(6)
+  pageUrl     String?   @db.VarChar(255)
+  extra       Json?     @db.Json
+  createdAt   DateTime? @db.Timestamp(6)
+
+  @@index([timestamp], map: "idx_blank_time")
+  @@index([isBlank], map: "idx_isBlank")
+  @@map("Blank Screen")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model Error {
+  id        Int       @id @default(autoincrement())
+  errorType String?   @db.VarChar(50)
+  message   String?
+  stack     String?
+  timestamp DateTime? @db.Timestamp(6)
+  pageUrl   String?   @db.VarChar(255)
+  userAgent String?   @db.VarChar(255)
+  extra     Json?     @db.Json
+  createdAt DateTime? @db.Timestamp(6)
+
+  @@index([timestamp], map: "idx_error_time")
+  @@index([errorType], map: "idx_error_type")
+  @@index([pageUrl], map: "idx_pageUrl")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model Performance {
+  id         Int       @id @default(autoincrement())
+  loadTime   Int?
+  domReady   Int?
+  firstPaint Int?
+  timestamp  DateTime? @db.Timestamp(6)
+  pageUrl    String?   @db.VarChar(255)
+  extra      Json?     @db.Json
+  createdAt  DateTime? @db.Timestamp(6)
+
+  @@index([pageUrl], map: "idx_performance_pageUrl")
+  @@index([timestamp], map: "idx_performance_time")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model Track_Event {
+  id          BigInt    @id @default(autoincrement())
+  project_id  String?   @db.VarChar(255)
+  type        String?   @db.VarChar(20)
+  event_name  String?   @db.VarChar(100)
+  user_id     String?   @db.VarChar(64)
+  page_url    String?
+  sdk_version String?   @db.VarChar(20)
+  ua          String?
+  created_at  DateTime? @db.Timestamp(6)
+  raw_data    Json?
+
+  @@map("Track Event")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model Users {
+  id               Int       @id @default(autoincrement())
+  username         String?   @unique(map: "idx_users_username") @db.VarChar(100)
+  password         String?   @db.VarChar(255)
+  createdAt        DateTime? @db.Timestamp(6)
+  updatedAt        DateTime? @db.Timestamp(6)
+  telephone_number Int?      @map("telephone number")
+  email            String?   @db.VarChar(100)
+}

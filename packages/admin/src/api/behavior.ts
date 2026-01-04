@@ -103,7 +103,7 @@ export interface EventFilterParams {
 
 // 创建 axios 实例
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: '', // 空字符串，使用Vite代理
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -132,7 +132,11 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
-      window.location.href = '/login'
+      // 检查当前页面是否已经是登录页面，避免登录失败时页面刷新
+      // 登录页面的实际路径是 / 而不是 /login
+      if (window.location.pathname !== '/') {
+        window.location.href = '/' // 重定向到登录页面
+      }
     }
     return Promise.reject(error)
   }
