@@ -3,7 +3,7 @@ import { API_BASE_URL, API_ENDPOINTS, ApiResponse, LoginData, RegisterData } fro
 
 // 创建 axios 实例
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: '', // 空字符串，使用Vite代理
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
