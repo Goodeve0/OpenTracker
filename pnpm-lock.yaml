@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@ant-design/charts':
         specifier: ^2.6.6
-        version: 2.6.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(workerize-loader@2.0.2(webpack@5.104.1))
+        version: 2.6.7(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(workerize-loader@2.0.2(webpack@5.104.1))
     devDependencies:
       '@commitlint/cli':
         specifier: ^20.1.0
@@ -183,14 +183,14 @@ packages:
       react: '>=16.8.4'
       react-dom: '>=16.8.4'
 
-  '@ant-design/charts-util@0.0.2':
-    resolution: {integrity: sha512-JuThvtHE8R3PldXzTkL3bmmFf0HVhih49CYinRrkwgovOmvDYaaKHnI53EWJbW8n4Ndcyy8jiZTSkoxcjGS6Zg==}
+  '@ant-design/charts-util@0.0.3':
+    resolution: {integrity: sha512-x1H7UT6t4dXAyGRoHqlOnEsEqBSTANFGTZEAMI0CWYhYUpp13n0o9grl9oPtoL6FEQMjUBTY+zGJKlHkz8smMw==}
     peerDependencies:
       react: '>=16.8.4'
       react-dom: '>=16.8.4'
 
-  '@ant-design/charts@2.6.6':
-    resolution: {integrity: sha512-Mw2XqB9c7JoENyewJmtxU+5TU2sW5VEyct2f6n4HjJ/6hBo4ht3qdu965G3UrNLyiRctd47Qje32u+8DeFZ6Bg==}
+  '@ant-design/charts@2.6.7':
+    resolution: {integrity: sha512-XfmsnspUpfrMlRFGTwmHJ2TPKcosq5a5nSxAfIOpEXAvmJBT2N16oejGTZhUFTzba8W3XtBOziwRAXmDmLUqvA==}
     peerDependencies:
       react: '>=16.8.4'
       react-dom: '>=16.8.4'
@@ -244,8 +244,8 @@ packages:
       react: '>=16.0.0'
       react-dom: '>=16.0.0'
 
-  '@ant-design/plots@2.6.6':
-    resolution: {integrity: sha512-yUcvW/b7FPiIKwCpC0AOYQhHVKFCOpthlizsJx2Tuq7OEzTCLSWjRjT8o8sEWo3CCtIAtAuLY4GOfGdGGz1f0A==}
+  '@ant-design/plots@2.6.8':
+    resolution: {integrity: sha512-QsunUs2d5rbq/1BwVhga/siA5H50OaG23YopMYwPD4sPsza6NQzPQ8FM3elNIsD/BIk298tihqX1cJ/MmvVJbQ==}
     peerDependencies:
       react: '>=16.8.4'
       react-dom: '>=16.8.4'
@@ -270,20 +270,20 @@ packages:
   '@antv/expr@1.0.2':
     resolution: {integrity: sha512-vrfdmPHkTuiS5voVutKl2l06w1ihBh9A8SFdQPEE+2KMVpkymzGOF1eWpfkbGZ7tiFE15GodVdhhHomD/hdIwg==}
 
-  '@antv/g-canvas@2.1.0':
-    resolution: {integrity: sha512-vUvbR6Y+rIek6boxwLfsKGlL3KuOYd5iZ/xr3hKOYXAVRAltsyQ8qkkXxOC3v/jiWpdjmM2r/WZF3j1O5PLnvA==}
+  '@antv/g-canvas@2.2.0':
+    resolution: {integrity: sha512-h7zVBBo2aO64DuGKvq9sG+yTU3sCUb9DALCVm7nz8qGPs8hhLuFOkKPEzUDNfNYZGJUGzY8UDtJ3QRGRFcvEQg==}
 
-  '@antv/g-lite@2.6.0':
-    resolution: {integrity: sha512-W1VyQXoiVi+ovKMfUZY76ptNGTLgg3DIK9XQ8/mKJmmsSuNDnYyQV2uH3Fl/zD3LrSbSdXu49AZPfbqHNxkFVQ==}
+  '@antv/g-lite@2.7.0':
+    resolution: {integrity: sha512-uSzgHYa5bwR5L2Au7/5tsOhFmXKZKLPBH90+Q9bP9teVs5VT4kOAi0isPSpDI8uhdDC2/VrfTWu5K9HhWI6FWw==}
 
   '@antv/g-math@3.1.0':
     resolution: {integrity: sha512-DtN1Gj/yI0UiK18nSBsZX8RK0LszGwqfb+cBYWgE+ddyTm8dZnW4tPUhV7QXePsS6/A5hHC+JFpAAK7OEGo5ZQ==}
 
-  '@antv/g-plugin-dragndrop@2.1.0':
-    resolution: {integrity: sha512-Pn791cAOzCz8z2bPSIo5GyfyzjjbUt5BikTYRVqwql3yb/EckFmfDXhF4Exxsn0kC+ETgvsKtCG6876AzbU5jA==}
+  '@antv/g-plugin-dragndrop@2.1.1':
+    resolution: {integrity: sha512-+aesDUJVQDs6UJ2bOBbDlaGAPCfHmU0MbrMTlQlfpwNplWueqtgVAZ3L57oZ2ZGHRWUHiRwZGPjXMBM3O2LELw==}
 
-  '@antv/g-svg@2.1.0':
-    resolution: {integrity: sha512-+v7NLgz7xFUMkEB4oGOaHMdX7nz0Y5hxJqOwwerAQH1R32RMfOrnSkWQFepoehG6UbtkNx2uuWkjoVong1LhOA==}
+  '@antv/g-svg@2.1.1':
+    resolution: {integrity: sha512-gVzBkjqA8FzDTbkuIxj6L0Omz/X/hFbYLzK6alWr0sHTfywqP6czcjDUJU8DF2MRIY1Twy55uZYW4dqqLXOXXg==}
 
   '@antv/g2-extension-plot@0.2.2':
     resolution: {integrity: sha512-KJXCXO7as+h0hDqirGXf1omrNuYzQmY3VmBmp7lIvkepbQ7sz3pPwy895r1FWETGF3vTk5UeFcAF5yzzBHWgbw==}
@@ -301,8 +301,8 @@ packages:
   '@antv/g6@5.0.50':
     resolution: {integrity: sha512-L2ZdekSpJreIvSc4DkqGCh2bFmCadDZiR6q9euVtXdLeHPl/YQ4hqTvLIkc7aYO6oE/nC5mPAIOaM6ZiAy7QKA==}
 
-  '@antv/g@6.3.0':
-    resolution: {integrity: sha512-QUQsUpOiodxqhXYzPTWT3+E3fH33IM/jjZS4avPJLyVkMYxkiMj/Wo9DMQoqSz+MnWrDIrKNjBV+mHJXD8ohgQ==}
+  '@antv/g@6.3.1':
+    resolution: {integrity: sha512-WYEKqy86LHB2PzTmrZXrIsIe+3Epeds2f68zceQ+BJtRoGki7Sy4IhlC8LrUMztgfT1t3d/0L745NWZwITroKA==}
 
   '@antv/graphin@3.0.5':
     resolution: {integrity: sha512-V/j8R8Ty44wUqxVIYLdpPuIO8WWCTIVq1eBJg5YRunL5t5o5qAFpC/qkQxslbBMWyKdIH0oWBnvHA74riGi7cw==}
@@ -3954,8 +3954,8 @@ packages:
       yaml:
         optional: true
 
-  watchpack@2.4.4:
-    resolution: {integrity: sha512-c5EGNOiyxxV5qmTtAB7rbiXxi1ooX1pQKMLX/MIabJjRA0SJBQOjKF+KSVfHkr9U1cADPon0mRiVe/riyaiDUA==}
+  watchpack@2.5.0:
+    resolution: {integrity: sha512-e6vZvY6xboSwLz2GD36c16+O/2Z6fKvIf4pOXptw2rY9MVwE/TXc6RGqxD3I3x0a28lwBY7DE+76uTPSsBrrCA==}
     engines: {node: '>=10.13.0'}
 
   web-vitals@5.1.0:
@@ -4060,16 +4060,16 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  '@ant-design/charts-util@0.0.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@ant-design/charts-util@0.0.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       lodash: 4.17.21
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  '@ant-design/charts@2.6.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(workerize-loader@2.0.2(webpack@5.104.1))':
+  '@ant-design/charts@2.6.7(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(workerize-loader@2.0.2(webpack@5.104.1))':
     dependencies:
       '@ant-design/graphs': 2.1.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(workerize-loader@2.0.2(webpack@5.104.1))
-      '@ant-design/plots': 2.6.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@ant-design/plots': 2.6.8(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       lodash: 4.17.21
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
@@ -4144,11 +4144,11 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  '@ant-design/plots@2.6.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@ant-design/plots@2.6.8(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
-      '@ant-design/charts-util': 0.0.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@ant-design/charts-util': 0.0.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@antv/event-emitter': 0.1.3
-      '@antv/g': 6.3.0
+      '@antv/g': 6.3.1
       '@antv/g2': 5.4.7
       '@antv/g2-extension-plot': 0.2.2
       lodash: 4.17.21
@@ -4171,7 +4171,7 @@ snapshots:
 
   '@antv/component@2.1.11':
     dependencies:
-      '@antv/g': 6.3.0
+      '@antv/g': 6.3.1
       '@antv/scale': 0.4.16
       '@antv/util': 3.3.11
       svg-path-parser: 1.1.0
@@ -4186,16 +4186,16 @@ snapshots:
 
   '@antv/expr@1.0.2': {}
 
-  '@antv/g-canvas@2.1.0':
+  '@antv/g-canvas@2.2.0':
     dependencies:
-      '@antv/g-lite': 2.6.0
+      '@antv/g-lite': 2.7.0
       '@antv/g-math': 3.1.0
       '@antv/util': 3.3.11
       '@babel/runtime': 7.28.4
       gl-matrix: 3.4.4
       tslib: 2.8.1
 
-  '@antv/g-lite@2.6.0':
+  '@antv/g-lite@2.7.0':
     dependencies:
       '@antv/g-math': 3.1.0
       '@antv/util': 3.3.11
@@ -4212,16 +4212,16 @@ snapshots:
       gl-matrix: 3.4.4
       tslib: 2.8.1
 
-  '@antv/g-plugin-dragndrop@2.1.0':
+  '@antv/g-plugin-dragndrop@2.1.1':
     dependencies:
-      '@antv/g-lite': 2.6.0
+      '@antv/g-lite': 2.7.0
       '@antv/util': 3.3.11
       '@babel/runtime': 7.28.4
       tslib: 2.8.1
 
-  '@antv/g-svg@2.1.0':
+  '@antv/g-svg@2.1.1':
     dependencies:
-      '@antv/g-lite': 2.6.0
+      '@antv/g-lite': 2.7.0
       '@antv/util': 3.3.11
       '@babel/runtime': 7.28.4
       gl-matrix: 3.4.4
@@ -4239,9 +4239,9 @@ snapshots:
       '@antv/coord': 0.4.7
       '@antv/event-emitter': 0.1.3
       '@antv/expr': 1.0.2
-      '@antv/g': 6.3.0
-      '@antv/g-canvas': 2.1.0
-      '@antv/g-plugin-dragndrop': 2.1.0
+      '@antv/g': 6.3.1
+      '@antv/g-canvas': 2.2.0
+      '@antv/g-plugin-dragndrop': 2.1.1
       '@antv/scale': 0.5.2
       '@antv/util': 3.3.11
       '@antv/vendor': 1.0.11
@@ -4250,8 +4250,8 @@ snapshots:
 
   '@antv/g6-extension-react@0.2.6(@antv/g6@5.0.50(workerize-loader@2.0.2(webpack@5.104.1)))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
-      '@antv/g': 6.3.0
-      '@antv/g-svg': 2.1.0
+      '@antv/g': 6.3.1
+      '@antv/g-svg': 2.1.1
       '@antv/g6': 5.0.50(workerize-loader@2.0.2(webpack@5.104.1))
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
@@ -4261,9 +4261,9 @@ snapshots:
       '@antv/algorithm': 0.1.26
       '@antv/component': 2.1.11
       '@antv/event-emitter': 0.1.3
-      '@antv/g': 6.3.0
-      '@antv/g-canvas': 2.1.0
-      '@antv/g-plugin-dragndrop': 2.1.0
+      '@antv/g': 6.3.1
+      '@antv/g-canvas': 2.2.0
+      '@antv/g-plugin-dragndrop': 2.1.1
       '@antv/graphlib': 2.0.4
       '@antv/hierarchy': 0.6.14
       '@antv/layout': 1.2.14-beta.9(workerize-loader@2.0.2(webpack@5.104.1))
@@ -4272,9 +4272,9 @@ snapshots:
     transitivePeerDependencies:
       - workerize-loader
 
-  '@antv/g@6.3.0':
+  '@antv/g@6.3.1':
     dependencies:
-      '@antv/g-lite': 2.6.0
+      '@antv/g-lite': 2.7.0
       '@antv/util': 3.3.11
       '@babel/runtime': 7.28.4
       gl-matrix: 3.4.4
@@ -8323,7 +8323,7 @@ snapshots:
       terser: 5.44.1
       yaml: 2.8.1
 
-  watchpack@2.4.4:
+  watchpack@2.5.0:
     dependencies:
       glob-to-regexp: 0.4.1
       graceful-fs: 4.2.11
@@ -8357,7 +8357,7 @@ snapshots:
       schema-utils: 4.3.3
       tapable: 2.3.0
       terser-webpack-plugin: 5.3.16(webpack@5.104.1)
-      watchpack: 2.4.4
+      watchpack: 2.5.0
       webpack-sources: 3.3.3
     transitivePeerDependencies:
       - '@swc/core'
