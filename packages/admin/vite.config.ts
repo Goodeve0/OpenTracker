@@ -1,7 +1,6 @@
 // vite.config.ts
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc' // 支持 TS/TSX 编译
-import type { UserConfig } from 'vite'
 
 // API地址配置 - 只需要修改这里即可切换所有API地址
 // 本地开发环境
@@ -36,12 +35,7 @@ export default defineConfig({
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(API_BASE_URL),
   },
   build: {
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-      },
-    } as any,
+    minify: 'esbuild',
     chunkSizeWarningLimit: 2000,
   },
 })
