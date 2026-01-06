@@ -37,11 +37,15 @@ export default defineConfig({
   // 优化依赖预构建
   optimizeDeps: {
     include: ['react', 'react-dom', 'antd', '@ant-design/charts', 'echarts'],
+    exclude: ['dagre'], // 优化dagre库，减少构建卡顿
   },
   build: {
     minify: 'esbuild',
     chunkSizeWarningLimit: 2000,
     sourcemap: false, // 禁用 sourcemap，减少内存占用
+    commonjsOptions: {
+      include: [/dagre/, /node_modules/], // 优化dagre的CommonJS转换
+    },
     rollupOptions: {
       output: {
         // 手动拆分大型依赖，减少单模块大小
