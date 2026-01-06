@@ -34,8 +34,23 @@ export default defineConfig({
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(API_BASE_URL),
   },
+  // 优化依赖预构建
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'antd', '@ant-design/charts', 'echarts'],
+  },
   build: {
     minify: 'esbuild',
     chunkSizeWarningLimit: 2000,
+    sourcemap: false, // 禁用 sourcemap，减少内存占用
+    rollupOptions: {
+      output: {
+        // 手动拆分大型依赖，减少单模块大小
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'antd-vendor': ['antd', '@ant-design/icons'],
+          'charts-vendor': ['@ant-design/charts', 'echarts', 'echarts-for-react'],
+        },
+      },
+    },
   },
 })
