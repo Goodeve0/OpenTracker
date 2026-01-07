@@ -14,7 +14,23 @@ import react from '@vitejs/plugin-react-swc' // 支持 TS/TSX 编译
 const API_BASE_URL = 'http://123.57.81.94'
 
 export default defineConfig({
-  plugins: [react()], // 该插件自动处理 TS/TSX
+  plugins: [
+    react(), // 该插件自动处理 TS/TSX
+    // 解决dagre模块默认导出问题的插件
+    {
+      name: 'fix-dagre-export',
+      transform(code, id) {
+        // 当处理dagre模块时，添加默认导出
+        if (id.includes('dagre') && id.endsWith('index.js')) {
+          return {
+            code: code + '\nexport default module.exports;',
+            map: null,
+          }
+        }
+        return null
+      },
+    },
+  ],
   resolve: {
     alias: {
       '@': '/src', // 和 tsconfig.json 的 paths 保持一致
@@ -37,24 +53,10 @@ export default defineConfig({
   // 优化依赖预构建
   optimizeDeps: {
     include: ['react', 'react-dom', 'antd', '@ant-design/charts', 'echarts'],
-    exclude: ['dagre'], // 优化dagre库，减少构建卡顿
   },
   build: {
     minify: 'esbuild',
     chunkSizeWarningLimit: 2000,
     sourcemap: false, // 禁用 sourcemap，减少内存占用
-    commonjsOptions: {
-      include: [/dagre/, /node_modules/], // 优化dagre的CommonJS转换
-    },
-    rollupOptions: {
-      output: {
-        // 手动拆分大型依赖，减少单模块大小
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'antd-vendor': ['antd', '@ant-design/icons'],
-          'charts-vendor': ['@ant-design/charts', 'echarts', 'echarts-for-react'],
-        },
-      },
-    },
   },
 })
