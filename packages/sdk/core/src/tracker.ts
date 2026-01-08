@@ -10,6 +10,7 @@ import {
 } from '../../types/src/core/config.js'
 import { PluginManager } from './plugin/plugin-manager.js'
 import { PluginContext } from './plugin/types.js'
+import { trackEventBus } from './event-bus/event-bus.js'
 export class LifecycleManager {
   private hooks: Map<LifecycleHook, LifecycleHookFunction[]> = new Map()
   private config: LifecycleManagerConfig
@@ -144,6 +145,11 @@ export class Tracker {
       tracker: this,
       config: this.config,
       send: this.report.bind(this),
+      // 添加事件总线方法
+      on: trackEventBus.on.bind(trackEventBus),
+      once: trackEventBus.once.bind(trackEventBus),
+      emit: trackEventBus.emit.bind(trackEventBus),
+      off: trackEventBus.off.bind(trackEventBus),
     }
     this.pluginManager = new PluginManager(pluginContext)
     console.log('🧩 Tracker插件系统已初始化')

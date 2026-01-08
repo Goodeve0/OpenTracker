@@ -1,4 +1,5 @@
 // SDK插件类型定义
+import { TrackEventMap } from '../../../types/src/core/event-bus.js'
 
 /**
  * 插件状态枚举
@@ -24,6 +25,22 @@ export interface PluginContext {
     eventData: Record<string, any>,
     isImmediate?: boolean
   ) => Promise<void> // 发送数据方法，与report方法签名一致
+  // 事件发布/订阅方法
+  on: <K extends keyof TrackEventMap>(
+    eventName: K,
+    handler: (data: TrackEventMap[K]) => void | Promise<void>,
+    options?: { once?: boolean; priority?: number }
+  ) => () => void
+  once: <K extends keyof TrackEventMap>(
+    eventName: K,
+    handler: (data: TrackEventMap[K]) => void | Promise<void>,
+    priority?: number
+  ) => () => void
+  emit: <K extends keyof TrackEventMap>(eventName: K, data: TrackEventMap[K]) => Promise<void>
+  off: <K extends keyof TrackEventMap>(
+    eventName: K,
+    handler?: (data: TrackEventMap[K]) => void | Promise<void>
+  ) => void
   [key: string]: any // 扩展属性
 }
 
