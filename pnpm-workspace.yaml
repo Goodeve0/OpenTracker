@@ -1,4 +1,9 @@
 packages:
-  - 'packages/sdk'
-  - 'packages/server'
-  - 'packages/admin'
+  - packages/sdk
+  - packages/server
+  - packages/admin
+
+ignoredBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - prisma

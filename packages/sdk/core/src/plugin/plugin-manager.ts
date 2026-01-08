@@ -1,5 +1,6 @@
 // SDK内核插件管理器
 import { Plugin, PluginContext } from './types.js'
+import { ConfigManager, UnifiedConfig, defaultUnifiedConfig } from '../config/config-manager.js'
 
 export class PluginManager {
   loadAll() {
@@ -8,16 +9,30 @@ export class PluginManager {
   private plugins: Map<string, Plugin> = new Map() // 已注册的插件
   private loadedPlugins: Map<string, Plugin> = new Map() // 已加载的插件
   private pluginContext: PluginContext | null = null // 插件上下文
+  private configManager: ConfigManager | null = null // 配置管理器
 
   /**
    * 初始化插件管理器
    * @param context 插件上下文
+   * @param configManager 配置管理器
    */
-  constructor(context?: PluginContext) {
+  constructor(context?: PluginContext, configManager?: ConfigManager) {
     if (context) {
       this.setContext(context)
     }
-    console.log('🔌 SDK内核插件管理器已初始化')
+    if (configManager) {
+      this.setConfigManager(configManager)
+    }
+    console.log(' SDK内核插件管理器已初始化')
+  }
+
+  /**
+   * 设置配置管理器
+   * @param configManager 配置管理器
+   */
+  setConfigManager(configManager: ConfigManager): void {
+    this.configManager = configManager
+    console.log('⚙️ 配置管理器已设置')
   }
 
   /**
@@ -44,6 +59,27 @@ export class PluginManager {
 
     this.plugins.set(plugin.name, plugin)
     console.log(`✅ 插件 ${plugin.name}@${plugin.version} 已注册`)
+  }
+
+  /**
+   * 根据配置注册插件
+   * @param config 统一配置对象
+   */
+  registerPluginsFromConfig(config: UnifiedConfig): void {
+    console.log('📦 根据配置开始注册插件')
+
+    Object.keys(config.plugins).forEach((pluginName) => {
+      const pluginConfig = config.plugins[pluginName]
+
+      // 只有当插件配置的enable为true时才注册
+      if (pluginConfig && pluginConfig.enable !== false) {
+        // 这里需要根据插件名称获取插件实例
+        // 实际实现时可能需要一个插件注册表或工厂函数
+        console.log(`准备注册插件 ${pluginName}，配置:`, pluginConfig)
+      }
+    })
+
+    console.log('✅ 根据配置注册插件完成')
   }
 
   /**
@@ -93,7 +129,21 @@ export class PluginManager {
 
     try {
       console.log(`🚀 正在初始化插件 ${pluginName}...`)
-      plugin.init(this.pluginContext)
+
+      // 从配置管理器获取插件配置
+      let pluginConfig = {}
+      if (this.configManager) {
+        pluginConfig = this.configManager.getPluginConfig(pluginName) || {}
+        console.log(`📋 获取到插件 ${pluginName} 的配置:`, pluginConfig)
+      }
+
+      // 增强插件上下文，添加插件配置
+      const enhancedContext = {
+        ...this.pluginContext,
+        config: pluginConfig,
+      }
+
+      plugin.init(enhancedContext)
       this.loadedPlugins.set(pluginName, plugin)
       console.log(`✅ 插件 ${pluginName} 加载成功`)
 

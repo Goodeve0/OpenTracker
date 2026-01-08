@@ -8,7 +8,7 @@ export interface OpenTrackerConfig {
 
 export interface BaseEvent {
   event: string
-  type: EventTypes
+  type: string
   timestamp: number
 }
 
