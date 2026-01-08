@@ -19,7 +19,11 @@ export enum PluginState {
 export interface PluginContext {
   tracker: any // Tracker实例
   config: any // 配置对象
-  send: (data: any) => void // 发送数据方法
+  send: (
+    eventType: string | any,
+    eventData: Record<string, any>,
+    isImmediate?: boolean
+  ) => Promise<void> // 发送数据方法，与report方法签名一致
   [key: string]: any // 扩展属性
 }
 
