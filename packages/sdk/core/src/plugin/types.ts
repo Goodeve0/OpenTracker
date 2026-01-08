@@ -41,6 +41,11 @@ export interface PluginContext {
     eventName: K,
     handler?: (data: TrackEventMap[K]) => void | Promise<void>
   ) => void
+  // 插件间数据共享方法
+  setData: <T = any>(key: string, value: T) => void
+  getData: <T = any>(key: string, defaultValue?: T) => T | undefined
+  deleteData: (key: string) => boolean
+  hasData: (key: string) => boolean
   [key: string]: any // 扩展属性
 }
 
