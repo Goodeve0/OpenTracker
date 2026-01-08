@@ -1,3 +1,6 @@
+import { ReportStrategy } from '../../../common/index.js'
+import { TrackEvent } from './config.js'
+
 // 埋点基础类型（所有埋点都包含的公共字段）
 interface BaseTrackEvent {
   eventId: string // 埋点唯一标识
@@ -29,11 +32,35 @@ export interface ErrorTrackEvent extends BaseTrackEvent {
 
 // 所有埋点事件的类型映射（核心：约束事件名和对应类型）
 export type TrackEventMap = {
+  // 上报开始事件
+  'tracker:report:start': {
+    strategy: ReportStrategy
+    eventCount: number
+    isImmediate: boolean
+    isUnloading: boolean
+    retryCount: number
+    serverUrl: string
+  }
   'track:click': ClickTrackEvent
   'track:page': PageTrackEvent
   'track:error': ErrorTrackEvent
-  'track:report:success': { eventId: string; requestId: string }
-  'track:report:fail': { eventId: string; error: Error }
+  // 上报成功事件
+  'tracker:report:success': {
+    strategy: ReportStrategy
+    events: TrackEvent[]
+    retryCount: number
+    serverUrl: string
+  }
+
+  // 上报失败事件
+  'tracker:report:fail': {
+    strategy: ReportStrategy
+    events: TrackEvent[]
+    retryCount: number
+    serverUrl: string
+    reason: string
+    error?: Error
+  }
 }
 
 // 事件监听器类型（增加优先级）
