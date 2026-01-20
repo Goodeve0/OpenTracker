@@ -4,6 +4,7 @@ import cors from '@koa/cors'
 import authRoutes from './routes/auth'
 import profileRoutes from './routes/profile'
 import trackRouter from './routes/track'
+import statsRoutes from './routes/stats'
 
 //创建koa实例
 const app = new Koa()
@@ -61,6 +62,9 @@ app.use(profileRoutes.allowedMethods())
 
 app.use(trackRouter.routes())
 app.use(trackRouter.allowedMethods())
+
+app.use(statsRoutes.routes())
+app.use(statsRoutes.allowedMethods())
 
 //启动服务器
 const PORT = process.env.PORT || 3000
