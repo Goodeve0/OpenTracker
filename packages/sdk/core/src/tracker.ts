@@ -10,6 +10,7 @@ import {
 } from '../../types/src/core/config.js'
 import { PluginManager } from './plugin/plugin-manager.js'
 import { PluginContext } from './plugin/types.js'
+import { trackEventBus } from './event-bus/event-bus.js'
 export class LifecycleManager {
   private hooks: Map<LifecycleHook, LifecycleHookFunction[]> = new Map()
   private config: LifecycleManagerConfig
@@ -121,6 +122,7 @@ export class Tracker {
   private config: TrackerConfig
   private lifecycleManager: LifecycleManager // 生命周期管理器实例
   private pluginManager!: PluginManager
+  private dataStore: Map<string, any> = new Map() // 插件间数据共享存储
 
   private constructor(config: TrackerConfig) {
     if (!config.apiKey || !config.serverUrl) {
@@ -144,6 +146,16 @@ export class Tracker {
       tracker: this,
       config: this.config,
       send: this.report.bind(this),
+      // 添加事件总线方法
+      on: trackEventBus.on.bind(trackEventBus),
+      once: trackEventBus.once.bind(trackEventBus),
+      emit: trackEventBus.emit.bind(trackEventBus),
+      off: trackEventBus.off.bind(trackEventBus),
+      // 添加插件间数据共享方法
+      setData: this.setData.bind(this),
+      getData: this.getData.bind(this),
+      deleteData: this.deleteData.bind(this),
+      hasData: this.hasData.bind(this),
     }
     this.pluginManager = new PluginManager(pluginContext)
     console.log('🧩 Tracker插件系统已初始化')
@@ -350,6 +362,23 @@ export class Tracker {
 
   public getPluginManager = (): PluginManager => {
     return this.pluginManager
+  }
+
+  // 插件间数据共享方法
+  public setData = <T = any>(key: string, value: T): void => {
+    this.dataStore.set(key, value)
+  }
+
+  public getData = <T = any>(key: string, defaultValue?: T): T | undefined => {
+    return this.dataStore.has(key) ? this.dataStore.get(key) : defaultValue
+  }
+
+  public deleteData = (key: string): boolean => {
+    return this.dataStore.delete(key)
+  }
+
+  public hasData = (key: string): boolean => {
+    return this.dataStore.has(key)
   }
 
   // 清除实例（静态方法）

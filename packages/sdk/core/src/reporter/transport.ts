@@ -1,6 +1,7 @@
 import { TrackEvent, TransportConfig } from '../../../types/src/core/config.js'
 import { ReportStrategy } from '../../../common/index.js'
 import { Retryer } from './retry.js'
+import { trackEventBus } from '../event-bus/event-bus.js'
 
 // 转换事件类型
 const transformEventType = (eventType: string): string => {
@@ -108,11 +109,17 @@ export class Transport {
   private serverUrl: string // 上报地址
   private debug: boolean // 调试模式
   private retryer: Retryer // 重试器实例
+  private eventBus = trackEventBus
   constructor(config: TransportConfig) {
     this.serverUrl = config.serverUrl
     this.debug = config.debug || false
     this.retryer = new Retryer() // 初始化重试器
     this.log('传输层初始化成功')
+
+    //支持外部注入自定义的 eventBus 实例
+    if ((config as any).eventBus) {
+      this.eventBus = (config as any).eventBus
+    }
   }
 
   // 根据事件数和页面状态选择上报策略
@@ -139,6 +146,16 @@ export class Transport {
     const strategy = this.selectStrategy(isImmediate, isUnloading, events.length)
     this.log(`选择上报策略：${strategy}，待上报事件数：${events.length}`)
 
+    //发布「上报开始」事件
+    this.eventBus.emit('tracker:report:start', {
+      strategy,
+      eventCount: events.length,
+      isImmediate,
+      isUnloading,
+      retryCount,
+      serverUrl: this.serverUrl,
+    })
+
     // 根据策略执行上报
     switch (strategy) {
       case ReportStrategy.BEACON:
@@ -163,8 +180,24 @@ export class Transport {
     const success = reportByBeacon(this.serverUrl, events)
     if (success) {
       this.log('Beacon上报成功')
+      // 发布「上报成功」事件
+      this.eventBus.emit('tracker:report:success', {
+        strategy: ReportStrategy.BEACON,
+        events,
+        retryCount,
+        serverUrl: this.serverUrl,
+      })
     } else {
-      this.log('Beacon上报失败，触发重试', 'warn')
+      const reason: string = 'Beacon队列添加失败，浏览器拒绝加入发送队列'
+      this.log(`Beacon上报失败，触发重试：${reason}`, 'warn')
+      // 发布「上报失败」事件
+      this.eventBus.emit('tracker:report:fail', {
+        strategy: ReportStrategy.BEACON,
+        events,
+        retryCount,
+        serverUrl: this.serverUrl,
+        reason,
+      })
       this.retryer.retry(this, events, isImmediate, isUnloading, retryCount)
     }
   }
@@ -179,8 +212,22 @@ export class Transport {
     const success = await reportByXHR(this.serverUrl, events)
     if (success) {
       this.log('XHR上报成功')
+      this.eventBus.emit('tracker:report:success', {
+        strategy: ReportStrategy.XHR,
+        events,
+        retryCount,
+        serverUrl: this.serverUrl,
+      })
     } else {
-      this.log('XHR上报失败，触发重试', 'warn')
+      const reason = 'XHR请求返回非2xx状态码'
+      this.log(`XHR上报失败，触发重试：${reason}`, 'warn')
+      this.eventBus.emit('tracker:report:fail', {
+        strategy: ReportStrategy.XHR,
+        events,
+        retryCount,
+        serverUrl: this.serverUrl,
+        reason,
+      })
       this.retryer.retry(this, events, isImmediate, isUnloading, retryCount)
     }
   }
@@ -195,8 +242,22 @@ export class Transport {
     const success = await reportByIMG(this.serverUrl, events)
     if (success) {
       this.log('IMG上报成功')
+      this.eventBus.emit('tracker:report:success', {
+        strategy: ReportStrategy.IMG,
+        events,
+        retryCount,
+        serverUrl: this.serverUrl,
+      })
     } else {
-      this.log('IMG上报失败，触发重试', 'warn')
+      const reason = 'IMG请求未全部成功完成'
+      this.log(`IMG上报失败，触发重试：${reason}`, 'warn')
+      this.eventBus.emit('tracker:report:fail', {
+        strategy: ReportStrategy.IMG,
+        events,
+        retryCount,
+        serverUrl: this.serverUrl,
+        reason,
+      })
       this.retryer.retry(this, events, isImmediate, isUnloading, retryCount)
     }
   }

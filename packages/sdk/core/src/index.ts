@@ -13,3 +13,6 @@ export type {
 // 导出全局管理方法
 export { initTracker, getTracker, destroyTracker } from './tracker.js'
 export { reportPerformance, reportBehavior, reportError, reportWhiteScreen } from './tracker.js'
+
+// 导出事件总线
+export { trackEventBus } from './event-bus/event-bus.js'
