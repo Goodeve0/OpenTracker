@@ -17,6 +17,8 @@ import {
 } from 'antd'
 import { RedoOutlined } from '@ant-design/icons'
 import BlankDetail from './blank-details'
+import ChartWithAdd from '../../../components/chart-with-add'
+import { ChartType } from '../../../types'
 
 const { Title } = Typography
 const { Content } = Layout
@@ -287,11 +289,17 @@ const BlankOverview: React.FC = () => {
               </Space>
             </Col>
           </Row>
-          <Card>
+          <ChartWithAdd
+            chartType={ChartType.WHITE_SCREEN_TRENDS}
+            title="白屏趋势分析"
+            description="展示白屏问题的发生趋势"
+            category="白屏监控"
+            defaultSize="large"
+          >
             <div style={{ width: '100%', height: 420 }}>
               <ReactEcharts option={getChartOption()} style={{ width: '100%', height: '100%' }} />
             </div>
-          </Card>
+          </ChartWithAdd>
           <Card>
             <Title level={5}>白屏列表</Title>
             <Space>
