@@ -12,10 +12,13 @@ import BehaviorVisitedPages from '@/screens/behavior/behavior-visited pages'
 
 import CustomerGrowth from '@/screens/customer/customer-growth'
 import CustomerSource from '@/screens/customer/customer-source'
-import ErrorPage from '@/screens/error/error-overview'
+import ErrorPage from '@/screens/error'
 import ErrorLogsPage from '@/screens/error/error-logs'
+import ErrorOverviewPage from '@/screens/error/error-overview'
 import PerformancePage from '@/screens/performance'
+import PerformanceOverviewPage from '@/screens/performance/overview'
 import BlankPage from '@/screens/blank'
+import BlankAnalysisPage from '@/screens/blank/components/blank-overview'
 import VisitorDevice from './screens/visitor/visitor-Device'
 import BehaviorEvent from './screens/behavior/behavior-event'
 
@@ -36,12 +39,53 @@ const AuthenticatedApp: React.FC = () => {
     '/home/visitor/device': 'sub22',
     '/home/behavior/event': 'sub31',
     '/home/behavior/page': 'sub32',
-    '/home/customer/channel': 'sub41',
+    '/home/customer/growth': 'sub41',
     '/home/customer/source': 'sub42',
-    '/home/error': 'sub51',
-    '/home/error/logs': 'sub52',
-    '/home/performance': 'sub61',
-    '/home/blank': 'sub71',
+    '/home/error/logs': 'sub51',
+    '/home/error/overview': 'sub52',
+    '/home/performance/overview': 'sub61',
+    '/home/blank/analysis': 'sub71',
+  }
+
+  // 路由名称映射，用于生成面包屑
+  const routeNameMap: Record<string, string> = {
+    '/home': '首页',
+    '/home/dashboard': '数据概览',
+    '/home/visitor': '访客分析',
+    '/home/visitor/trends': '访客趋势',
+    '/home/visitor/device': '设备分析',
+    '/home/behavior': '行为分析',
+    '/home/behavior/event': '事件分析',
+    '/home/behavior/page': '页面访问',
+    '/home/customer': '获客分析',
+    '/home/customer/growth': '用户增长',
+    '/home/customer/source': '来源分析',
+    '/home/error': '错误分析',
+    '/home/error/logs': '错误日志',
+    '/home/error/overview': '错误概览',
+    '/home/performance': '性能分析',
+    '/home/performance/overview': '性能概览',
+    '/home/blank': '白屏监控',
+    '/home/blank/analysis': '白屏分析',
+  }
+
+  // 生成面包屑项
+  const getBreadcrumbItems = () => {
+    const pathSegments = location.pathname.split('/').filter((segment) => segment)
+    const breadcrumbItems: Array<{ title: string; href?: string }> = [
+      { title: '首页', href: '/home' },
+    ]
+
+    let currentPath = ''
+    for (const segment of pathSegments) {
+      currentPath += `/${segment}`
+      if (currentPath === '/home') continue // 跳过首页，已经添加
+
+      const title = routeNameMap[currentPath] || segment
+      breadcrumbItems.push({ title })
+    }
+
+    return breadcrumbItems
   }
 
   // 根据当前URL设置菜单选中状态
@@ -59,12 +103,12 @@ const AuthenticatedApp: React.FC = () => {
       sub22: '/home/visitor/device',
       sub31: '/home/behavior/event',
       sub32: '/home/behavior/page',
-      sub41: '/home/customer/channel',
+      sub41: '/home/customer/growth',
       sub42: '/home/customer/source',
-      sub51: '/home/error',
-      sub52: '/home/error/logs',
-      sub61: '/home/performance',
-      sub71: '/home/blank',
+      sub51: '/home/error/logs',
+      sub52: '/home/error/overview',
+      sub61: '/home/performance/overview',
+      sub71: '/home/blank/analysis',
     }
     const route = routeMap[e.key]
     if (route) {
@@ -75,10 +119,7 @@ const AuthenticatedApp: React.FC = () => {
     <Layout style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <HeaderComponent />
       <div style={{ flex: 1, padding: '0 48px', display: 'flex', flexDirection: 'column' }}>
-        <Breadcrumb
-          style={{ margin: '16px 0' }}
-          items={[{ title: 'Home' }, { title: 'List' }, { title: 'App' }]}
-        />
+        <Breadcrumb style={{ margin: '16px 0' }} items={getBreadcrumbItems()} />
         <Layout
           style={{
             flex: 1,
@@ -103,12 +144,15 @@ const AuthenticatedApp: React.FC = () => {
                 <Route path="behavior" element={<BehaviorPage />} />
                 <Route path="behavior/page" element={<BehaviorVisitedPages />} />
                 <Route path="behavior/event" element={<BehaviorEvent />} />
-                <Route path="customer/channel" element={<CustomerGrowth />} />
+                <Route path="customer/growth" element={<CustomerGrowth />} />
                 <Route path="customer/source" element={<CustomerSource />} />
                 <Route path="error" element={<ErrorPage />} />
                 <Route path="error/logs" element={<ErrorLogsPage />} />
+                <Route path="error/overview" element={<ErrorOverviewPage />} />
                 <Route path="performance" element={<PerformancePage />} />
+                <Route path="performance/overview" element={<PerformanceOverviewPage />} />
                 <Route path="blank" element={<BlankPage />} />
+                <Route path="blank/analysis" element={<BlankAnalysisPage />} />
               </Routes>
             </div>
           </Content>
