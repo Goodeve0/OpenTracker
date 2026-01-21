@@ -49,8 +49,8 @@ const Login = () => {
         setSuccessMsg('登录成功！即将跳转首页')
 
         setTimeout(() => {
-          // 登录成功后跳转到主页
-          navigate('/home')
+          // 登录成功后跳转到报表面板
+          navigate('/home/dashboard')
         }, 2000)
       } else {
         // 登录失败

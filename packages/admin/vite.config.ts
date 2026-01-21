@@ -4,17 +4,33 @@ import react from '@vitejs/plugin-react-swc' // 支持 TS/TSX 编译
 
 // API地址配置 - 只需要修改这里即可切换所有API地址
 // 本地开发环境
-const API_BASE_URL = 'http://localhost:3000'
+// const API_BASE_URL = 'http://localhost:3000'
 // const API_BASE_URL = 'http://127.0.0.1:3000'
 
 // 测试环境
 // const API_BASE_URL = 'http://192.168.1.100:3000'
 
 // 线上服务器后端（默认启用）
-// const API_BASE_URL = 'http://123.57.81.94'
+const API_BASE_URL = 'http://123.57.81.94'
 
 export default defineConfig({
-  plugins: [react()], // 该插件自动处理 TS/TSX
+  plugins: [
+    react(), // 该插件自动处理 TS/TSX
+    // 解决dagre模块默认导出问题的插件
+    {
+      name: 'fix-dagre-export',
+      transform(code, id) {
+        // 当处理dagre模块时，添加默认导出
+        if (id.includes('dagre') && id.endsWith('index.js')) {
+          return {
+            code: code + '\nexport default module.exports;',
+            map: null,
+          }
+        }
+        return null
+      },
+    },
+  ],
   resolve: {
     alias: {
       '@': '/src', // 和 tsconfig.json 的 paths 保持一致
@@ -33,5 +49,14 @@ export default defineConfig({
   // 配置环境变量，供代码中使用
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(API_BASE_URL),
+  },
+  // 优化依赖预构建
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'antd', '@ant-design/charts', 'echarts'],
+  },
+  build: {
+    minify: 'esbuild',
+    chunkSizeWarningLimit: 2000,
+    sourcemap: false, // 禁用 sourcemap，减少内存占用
   },
 })

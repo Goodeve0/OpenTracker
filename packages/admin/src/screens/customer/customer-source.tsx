@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Card, Spin, Empty } from 'antd'
 import { Pie } from '@ant-design/charts'
 import { PieChartOutlined } from '@ant-design/icons'
+import ChartWithAdd from '../../components/chart-with-add'
+import { ChartType } from '../../types'
 
 // 客户来源数据类型
 interface CustomerSourceData {
@@ -89,16 +91,15 @@ const CustomerSource: React.FC = () => {
   }
 
   return (
-    <Card
-      title={
-        <div className="flex items-center gap-2">
-          <PieChartOutlined />
-          <span>客户来源分析</span>
-        </div>
-      }
-      style={{ marginBottom: 20 }}
-    >
-      <Spin spinning={loading} tip="加载客户来源数据中...">
+    <div className="customer-source-page" style={{ padding: '20px' }}>
+      <ChartWithAdd
+        chartType={ChartType.CUSTOMER_SOURCE}
+        title="客户来源分析"
+        description="展示用户来源渠道的分布情况"
+        category="获客分析"
+        defaultSize="large"
+        loading={loading}
+      >
         {error ? (
           <div className="text-center text-red-500 py-10">
             <p>{error}</p>
@@ -112,7 +113,6 @@ const CustomerSource: React.FC = () => {
         ) : data.length > 0 ? (
           <div className="customer-source-container">
             <div className="chart-container" style={{ height: 400 }}>
-              {/* 使用最可靠的函数配置，确保能正确获取数据 */}
               <Pie
                 data={data}
                 angleField="value"
@@ -167,8 +167,8 @@ const CustomerSource: React.FC = () => {
             style={{ margin: '40px 0' }}
           />
         )}
-      </Spin>
-    </Card>
+      </ChartWithAdd>
+    </div>
   )
 }
 
