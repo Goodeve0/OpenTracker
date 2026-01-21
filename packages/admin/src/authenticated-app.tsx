@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import type { MenuProps } from 'antd'
 import { Breadcrumb, Layout, theme } from 'antd'
-import { useNavigate, Route, Routes } from 'react-router-dom'
+import { useNavigate, Route, Routes, useLocation } from 'react-router-dom'
 import HeaderComponent from '@/components/header'
 import SiderComponent from '@/components/sider'
 import DashboardPage from '@/screens/dashboard'
@@ -22,11 +22,33 @@ import BehaviorEvent from './screens/behavior/behavior-event'
 const { Content, Footer } = Layout
 
 const AuthenticatedApp: React.FC = () => {
-  const [currentKey, setCurrentKey] = useState('sub1')
+  const [currentKey, setCurrentKey] = useState('sub11')
   const navigate = useNavigate()
+  const location = useLocation()
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken()
+
+  // 路由到菜单key的映射
+  const routeToKeyMap: Record<string, string> = {
+    '/home/dashboard': 'sub11',
+    '/home/visitor/trends': 'sub21',
+    '/home/visitor/device': 'sub22',
+    '/home/behavior/event': 'sub31',
+    '/home/behavior/page': 'sub32',
+    '/home/customer/channel': 'sub41',
+    '/home/customer/source': 'sub42',
+    '/home/error': 'sub51',
+    '/home/error/logs': 'sub52',
+    '/home/performance': 'sub61',
+    '/home/blank': 'sub71',
+  }
+
+  // 根据当前URL设置菜单选中状态
+  useEffect(() => {
+    const key = routeToKeyMap[location.pathname] || 'sub11'
+    setCurrentKey(key)
+  }, [location.pathname])
 
   const onMenuClick: MenuProps['onClick'] = (e) => {
     setCurrentKey(e.key)

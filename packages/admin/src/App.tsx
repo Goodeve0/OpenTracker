@@ -26,8 +26,8 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = !!getToken()
 
   if (isAuthenticated) {
-    // 已登录则重定向到主页
-    return <Navigate to="/home" replace />
+    // 已登录则重定向到报表面板
+    return <Navigate to="/home/dashboard" replace />
   }
 
   // 未登录则渲染子组件
@@ -84,10 +84,16 @@ const App = () => {
               }
             />
 
-            {/* 捕获所有未匹配的路由，已登录用户重定向到/home，未登录用户重定向到/ */}
+            {/* 捕获所有未匹配的路由，已登录用户重定向到/home/dashboard，未登录用户重定向到/ */}
             <Route
               path="*"
-              element={!!getToken() ? <Navigate to="/home" replace /> : <Navigate to="/" replace />}
+              element={
+                !!getToken() ? (
+                  <Navigate to="/home/dashboard" replace />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
             />
           </Routes>
         </div>
