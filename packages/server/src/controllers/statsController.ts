@@ -15,17 +15,48 @@ class StatsController {
       return
     }
 
-    const data = await statsService.getStats({
-      type: type as string,
-      startTime: startTime ? Number(startTime) : undefined,
-      endTime: endTime ? Number(endTime) : undefined,
-    })
+    // 验证startTime和endTime是否为有效数字
+    if (startTime && isNaN(Number(startTime))) {
+      ctx.status = 400
+      ctx.body = {
+        code: 400,
+        message: 'startTime必须为有效数字',
+        timestamp: new Date().toISOString(),
+      }
+      return
+    }
 
-    ctx.body = {
-      code: 200,
-      message: '获取成功',
-      data,
-      timeStamp: new Date().toISOString(),
+    if (endTime && isNaN(Number(endTime))) {
+      ctx.status = 400
+      ctx.body = {
+        code: 400,
+        message: 'endTime必须为有效数字',
+        timestamp: new Date().toISOString(),
+      }
+      return
+    }
+
+    try {
+      const data = await statsService.getStats({
+        type: type as string,
+        startTime: startTime ? Number(startTime) : undefined,
+        endTime: endTime ? Number(endTime) : undefined,
+      })
+
+      ctx.body = {
+        code: 200,
+        message: '获取成功',
+        data,
+        timestamp: new Date().toISOString(),
+      }
+    } catch (error) {
+      console.error(`获取统计数据失败，类型：${type}，错误：`, error)
+      ctx.status = 500
+      ctx.body = {
+        code: 500,
+        message: error instanceof Error ? error.message : '获取统计数据失败',
+        timestamp: new Date().toISOString(),
+      }
     }
   }
 }
