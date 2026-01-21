@@ -71,22 +71,24 @@ const AuthenticatedApp: React.FC = () => {
             onMenuClick={onMenuClick}
             colorBgContainer={colorBgContainer}
           />
-          <Content style={{ padding: '0 24px', maxHeight: 684, overflow: 'auto' }}>
-            <Routes>
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="visitor" element={<VisitorPage />} />
-              <Route path="visitor/trends" element={<VisitorTrends />} />
-              <Route path="visitor/device" element={<VisitorDevice />} />
-              <Route path="behavior" element={<BehaviorPage />} />
-              <Route path="behavior/page" element={<BehaviorVisitedPages />} />
-              <Route path="behavior/event" element={<BehaviorEvent />} />
-              <Route path="customer/channel" element={<CustomerGrowth />} />
-              <Route path="customer/source" element={<CustomerSource />} />
-              <Route path="error" element={<ErrorPage />} />
-              <Route path="error/logs" element={<ErrorLogsPage />} />
-              <Route path="performance" element={<PerformancePage />} />
-              <Route path="blank" element={<BlankPage />} />
-            </Routes>
+          <Content style={{ padding: '0 24px', overflow: 'visible' }}>
+            <div style={{ maxHeight: 684, overflow: 'auto' }}>
+              <Routes>
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="visitor" element={<VisitorPage />} />
+                <Route path="visitor/trends" element={<VisitorTrends />} />
+                <Route path="visitor/device" element={<VisitorDevice />} />
+                <Route path="behavior" element={<BehaviorPage />} />
+                <Route path="behavior/page" element={<BehaviorVisitedPages />} />
+                <Route path="behavior/event" element={<BehaviorEvent />} />
+                <Route path="customer/channel" element={<CustomerGrowth />} />
+                <Route path="customer/source" element={<CustomerSource />} />
+                <Route path="error" element={<ErrorPage />} />
+                <Route path="error/logs" element={<ErrorLogsPage />} />
+                <Route path="performance" element={<PerformancePage />} />
+                <Route path="blank" element={<BlankPage />} />
+              </Routes>
+            </div>
           </Content>
         </Layout>
       </div>

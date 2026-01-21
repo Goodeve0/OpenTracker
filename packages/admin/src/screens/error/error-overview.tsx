@@ -25,6 +25,8 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import type { ErrorItem } from '../../types/error'
+import ChartWithAdd from '../../components/chart-with-add'
+import { ChartType } from '../../types'
 const { Content } = Layout
 const { Text } = Typography
 
@@ -388,21 +390,39 @@ const ErrorOverview = () => {
           </Row>
           <Row gutter={16}>
             <Col span={24}>
-              <Card title="错误趋势分析 (24h)">
+              <ChartWithAdd
+                chartType={ChartType.ERROR_TRENDS}
+                title="错误趋势分析 (24h)"
+                description="展示24小时内的错误变化趋势"
+                category="错误分析"
+                defaultSize="large"
+              >
                 <div ref={trendChartRef} style={{ height: '350px', width: '100%' }}></div>
-              </Card>
+              </ChartWithAdd>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Card title="错误类型分布">
+              <ChartWithAdd
+                chartType={ChartType.ERROR_TYPE}
+                title="错误类型分布"
+                description="展示各类错误的分布情况"
+                category="错误分析"
+                defaultSize="medium"
+              >
                 <div ref={pieChartRef} style={{ height: '300px', width: '100%' }}></div>
-              </Card>
+              </ChartWithAdd>
             </Col>
             <Col span={12}>
-              <Card title="高频报错页面 Top 5">
+              <ChartWithAdd
+                chartType={ChartType.HIGH_ERROR_PAGES}
+                title="高频报错页面 Top 5"
+                description="展示报错次数最多的前5个页面"
+                category="错误分析"
+                defaultSize="medium"
+              >
                 <div ref={barChartRef} style={{ height: '300px', width: '100%' }}></div>
-              </Card>
+              </ChartWithAdd>
             </Col>
           </Row>
           <Row gutter={16}>

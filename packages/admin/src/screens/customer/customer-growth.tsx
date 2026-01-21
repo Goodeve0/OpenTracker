@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Spin, Empty, DatePicker, Select } from 'antd'
 import { AreaChartOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'
+import ChartWithAdd from '../../components/chart-with-add'
+import { ChartType } from '../../types'
 import dayjs from 'dayjs'
 import { Line } from '@ant-design/charts'
 
@@ -206,43 +208,15 @@ const CustomerGrowth: React.FC = () => {
   const growthTrend = calculateGrowthTrend()
 
   return (
-    <Card
-      title={
-        <div className="flex items-center gap-2">
-          <AreaChartOutlined />
-          <span>客户增长趋势</span>
-        </div>
-      }
-      extra={
-        <div className="flex items-center gap-2">
-          <Select value={timeRange} onChange={handleTimeRangeChange} style={{ width: 120 }}>
-            {timeRangeOptions.map((option) => (
-              <Option key={option.value} value={option.value}>
-                {option.label}
-              </Option>
-            ))}
-          </Select>
-
-          {timeRange === 'custom' && (
-            <RangePicker
-              onChange={(dates, dateStrings) =>
-                handleCustomDateRangeChange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])
-              }
-              placeholder={['开始日期', '结束日期']}
-              format="YYYY-MM-DD"
-              style={{ width: 240 }}
-            />
-          )}
-
-          <Select value={period} onChange={setPeriod} style={{ width: 100 }}>
-            <Option value="daily">日</Option>
-            <Option value="weekly">周</Option>
-            <Option value="monthly">月</Option>
-          </Select>
-        </div>
-      }
-    >
-      <Spin spinning={loading} tip="加载客户增长数据中...">
+    <div className="customer-growth-page" style={{ padding: '20px' }}>
+      <ChartWithAdd
+        chartType={ChartType.CUSTOMER_GROWTH}
+        title="客户增长趋势"
+        description="展示新增用户、活跃用户和累计用户的变化趋势"
+        category="获客分析"
+        defaultSize="large"
+        loading={loading}
+      >
         {error ? (
           <div className="text-center text-red-500 py-10">
             <p>{error}</p>
@@ -299,7 +273,6 @@ const CustomerGrowth: React.FC = () => {
                 yField="value"
                 seriesField="type"
                 smooth
-                // 配置每个系列的颜色
                 series={[
                   {
                     name: '新增用户',
@@ -381,8 +354,8 @@ const CustomerGrowth: React.FC = () => {
             style={{ margin: '40px 0' }}
           />
         )}
-      </Spin>
-    </Card>
+      </ChartWithAdd>
+    </div>
   )
 }
 
