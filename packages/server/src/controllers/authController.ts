@@ -13,7 +13,7 @@ class AuthController {
   }
   // 用户注册
   async register(ctx: Context): Promise<void> {
-    const { username, password } = ctx.request.body as IRegisterRequest
+    const { username, password } = ctx.request.body as { username: string; password: string }
 
     console.log('注册请求:', { username, password: '***' })
 
@@ -43,7 +43,7 @@ class AuthController {
       })
       if (existingUser) {
         ctx.status = 409
-        ctx.body = this.createResponse(409, '用户已存在')
+        ctx.body = this.createResponse(409, '用户名已存在')
         return
       }
 
@@ -64,6 +64,7 @@ class AuthController {
       const tokenPayload: TokenPayload = {
         userId: user.id.toString(),
         username: user.username || '',
+        name: user.name || undefined,
       }
       const token = JWTUtil.generateToken(tokenPayload)
 
@@ -72,6 +73,9 @@ class AuthController {
         user: {
           id: user.id.toString(),
           username: user.username || '',
+          name: user.name || undefined,
+          email: user.email || undefined,
+          phone: user.telephone_number?.toString(),
         },
         token,
         expiresIn: '7d',
@@ -122,6 +126,7 @@ class AuthController {
       const tokenPayload: TokenPayload = {
         userId: user.id.toString(),
         username: user.username || '',
+        name: user.name || undefined,
       }
       const token = JWTUtil.generateToken(tokenPayload)
 
@@ -130,6 +135,9 @@ class AuthController {
         user: {
           id: user.id.toString(),
           username: user.username || '',
+          name: user.name || undefined,
+          email: user.email || undefined,
+          phone: user.telephone_number?.toString(),
         },
         token,
         expiresIn: '7d',

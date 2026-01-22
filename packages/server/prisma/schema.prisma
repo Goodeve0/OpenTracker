@@ -90,9 +90,14 @@ model Track_Event {
 model Users {
   id               Int       @id @default(autoincrement())
   username         String?   @unique(map: "idx_users_username") @db.VarChar(100)
+  name             String?   @db.VarChar(100)
   password         String?   @db.VarChar(255)
   createdAt        DateTime? @db.Timestamp(6)
   updatedAt        DateTime? @db.Timestamp(6)
   telephone_number Int?      @map("telephone number")
   email            String?   @db.VarChar(100)
+  gender           String?   @db.VarChar(10)
+  age              Int?
+  bio              String?   @db.Text
+  avatar           String?   @db.VarChar(255)
 }

@@ -1,12 +1,22 @@
 export interface IUser {
   id: string
   username: string
+  name?: string
   password: string
+  email?: string
+  phone?: string
+  gender?: string
+  age?: number
+  bio?: string
+  avatar?: string
 }
 
 export interface IRegisterRequest {
   username: string
+  name?: string
   password: string
+  email?: string
+  phone?: string
 }
 
 export interface ILoginRequest {
@@ -18,6 +28,13 @@ export interface IAuthResponse {
   user: {
     id: string
     username: string
+    name?: string
+    email?: string
+    phone?: string
+    gender?: string
+    age?: number
+    bio?: string
+    avatar?: string
   }
   token?: string
   expiresIn?: string
