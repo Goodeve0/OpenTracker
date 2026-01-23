@@ -18,9 +18,7 @@ api.interceptors.response.clear()
 // 添加新的请求拦截器
 api.interceptors.request.use(
   (config) => {
-    console.log('请求配置:', config)
     const token = localStorage.getItem('authToken')
-    console.log('添加到请求头的token:', token)
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -161,9 +159,7 @@ export const authAPI = {
   // 更新个人资料
   updateProfile: async (data: UpdateProfileRequest): Promise<ApiResponse<UserProfileData>> => {
     try {
-      console.log('=== 更新个人资料请求 ===')
       const token = localStorage.getItem('authToken')
-      console.log('当前token:', token)
 
       // 构造符合服务器要求的数据结构
       // 服务器端实际处理逻辑期望age和telephone_number是string类型，会手动转换为number
@@ -185,8 +181,6 @@ export const authAPI = {
         Object.entries(requestData).filter(([_, value]) => value !== undefined && value !== null)
       )
 
-      console.log('最终请求数据:', JSON.stringify(filteredData, null, 2))
-
       // 设置请求头
       const config = {
         headers: {
@@ -197,9 +191,6 @@ export const authAPI = {
         withCredentials: false,
       }
 
-      console.log('请求配置:', config)
-      console.log('请求URL:', API_BASE_URL + API_ENDPOINTS.profile)
-
       // 发送请求
       const response = await axios.put<ApiResponse<UserProfileData>>(
         API_BASE_URL + API_ENDPOINTS.profile,
@@ -207,22 +198,10 @@ export const authAPI = {
         config
       )
 
-      console.log('=== 更新个人资料响应 ===')
-      console.log('响应状态:', response.status)
-      console.log('响应数据:', JSON.stringify(response.data, null, 2))
       return response.data
     } catch (error: any) {
-      console.error('=== 更新个人资料错误 ===')
-      console.error('错误对象:', error)
       if (error.response) {
-        console.error('错误响应状态:', error.response.status)
-        console.error('错误响应数据:', JSON.stringify(error.response.data, null, 2))
-        console.error('错误响应头:', error.response.headers)
         return error.response.data
-      } else if (error.request) {
-        console.error('没有收到响应:', error.request)
-      } else {
-        console.error('请求配置错误:', error.message)
       }
       return {
         code: 500,
@@ -235,9 +214,7 @@ export const authAPI = {
   // 修改密码
   changePassword: async (currentPassword: string, newPassword: string): Promise<ApiResponse> => {
     try {
-      console.log('=== 修改密码请求 ===')
       const token = localStorage.getItem('authToken')
-      console.log('当前token:', token)
 
       // 设置请求头
       const config = {
@@ -249,9 +226,6 @@ export const authAPI = {
         withCredentials: false,
       }
 
-      console.log('请求配置:', config)
-      console.log('请求URL:', API_BASE_URL + API_ENDPOINTS.changePassword)
-
       // 发送请求
       const response = await axios.post<ApiResponse>(
         API_BASE_URL + API_ENDPOINTS.changePassword,
@@ -259,22 +233,10 @@ export const authAPI = {
         config
       )
 
-      console.log('=== 修改密码响应 ===')
-      console.log('响应状态:', response.status)
-      console.log('响应数据:', JSON.stringify(response.data, null, 2))
       return response.data
     } catch (error: any) {
-      console.error('=== 修改密码错误 ===')
-      console.error('错误对象:', error)
       if (error.response) {
-        console.error('错误响应状态:', error.response.status)
-        console.error('错误响应数据:', JSON.stringify(error.response.data, null, 2))
-        console.error('错误响应头:', error.response.headers)
         return error.response.data
-      } else if (error.request) {
-        console.error('没有收到响应:', error.request)
-      } else {
-        console.error('请求配置错误:', error.message)
       }
       return {
         code: 500,

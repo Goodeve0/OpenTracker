@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { performanceCollector as importedCollector } from '../../../../sdk/plugins/src/performance'
 import ChartWithAdd from '../../components/chart-with-add'
 import { ChartType } from '../../types'
 
@@ -37,7 +36,6 @@ const PerformancePage: React.FC = () => {
   })
   const [rawReport, setRawReport] = useState<any>(null)
   const [lastUpdate, setLastUpdate] = useState<number | null>(null)
-  const [collectorAvailable, setCollectorAvailable] = useState<boolean>(true)
   const intervalRef = useRef<number | null>(null)
 
   // ECharts 引用与实例（仅保留饼图与折线图）
@@ -53,78 +51,69 @@ const PerformancePage: React.FC = () => {
     resourceLoad: [],
   })
 
-  // 尝试从导入的 singleton 或 window 上获取 collector
-  const resolveCollector = () => {
-    return (
-      importedCollector ||
-      (window as any).performanceCollector ||
-      (window as any).opentracker?.performanceCollector ||
-      null
-    )
-  }
-
   const pull = () => {
-    const c = resolveCollector()
-    if (!c) {
-      setCollectorAvailable(false)
-      return
-    }
+    // 使用静态的mock数据，不再从SDK获取
+    const now = Date.now()
 
-    try {
-      let report: any = null
-      if (typeof c.getReportData === 'function') report = c.getReportData()
-      else if (typeof c.getPerformanceData === 'function')
-        report = {
-          performanceData: c.getPerformanceData(),
-          timestamp: Date.now(),
-          pageURL: location.href,
-          userAgent: navigator.userAgent,
-        }
+    // 设置静态的核心指标数据
+    setCore({
+      lcp: 1200, // 最大内容绘制时间（毫秒）
+      inp: 300, // 交互到下次绘制时间（毫秒）
+      cls: 0.1, // 累积布局偏移
+    })
 
-      if (!report) return
-      setRawReport(report)
-      const p = report.performanceData || report
-      if (p.coreVitals) setCore(p.coreVitals)
-      if (p.loadingPerformance) setLoading(p.loadingPerformance)
-      if (p.networkPerformance) setNetwork(p.networkPerformance)
-      if (p.runtimePerformance) setRuntime(p.runtimePerformance)
-      setLastUpdate(report.timestamp || Date.now())
-      // 更新各指标历史，用于折线图（保留最近 60 条）
-      try {
-        const now = Date.now()
-        const pushIfNumber = (key: string, val: any) => {
-          if (typeof val === 'number' && !Number.isNaN(val)) {
-            setHistories((prev) => {
-              const arr = (prev[key] || []).concat({ t: now, v: val })
-              return { ...prev, [key]: arr.slice(-60) }
-            })
-          }
-        }
+    // 设置静态的加载性能数据
+    setLoading({
+      ttfb: 100, // 首字节时间
+      fp: 500, // 首次绘制
+      fcp: 800, // 首次内容绘制
+      dcl: 1500, // DOM内容加载完成
+      load: 2000, // 页面完全加载
+    })
 
-        // core vitals
-        pushIfNumber('inp', p.coreVitals?.inp ?? null)
-        pushIfNumber('cls', p.coreVitals?.cls ?? null)
+    // 设置静态的网络性能数据
+    setNetwork({
+      dns: 50, // DNS解析时间
+      tcp: 100, // TCP连接时间
+    })
 
-        // runtime metrics
-        pushIfNumber('longTask', p.runtimePerformance?.longTask ?? null)
-        pushIfNumber('fps', p.runtimePerformance?.fps ?? null)
-        pushIfNumber('resourceLoad', p.runtimePerformance?.resourceLoad ?? null)
-      } catch (_) {}
-      setCollectorAvailable(true)
-    } catch (e) {
-      console.error('pull performance data error', e)
-    }
+    // 设置静态的运行时性能数据
+    setRuntime({
+      longTask: 30, // 长任务时间
+      fps: 55, // 帧率
+      resourceLoad: 200, // 资源加载时间
+    })
+
+    // 设置最后更新时间
+    setLastUpdate(now)
+
+    // 设置静态的历史数据，用于折线图
+    setHistories({
+      inp: Array.from({ length: 20 }, (_, i) => ({
+        t: now - (20 - i) * 1000,
+        v: 200 + Math.random() * 300,
+      })),
+      cls: Array.from({ length: 20 }, (_, i) => ({
+        t: now - (20 - i) * 1000,
+        v: 0.05 + Math.random() * 0.15,
+      })),
+      longTask: Array.from({ length: 20 }, (_, i) => ({
+        t: now - (20 - i) * 1000,
+        v: 10 + Math.random() * 40,
+      })),
+      fps: Array.from({ length: 20 }, (_, i) => ({
+        t: now - (20 - i) * 1000,
+        v: 50 + Math.random() * 10,
+      })),
+      resourceLoad: Array.from({ length: 20 }, (_, i) => ({
+        t: now - (20 - i) * 1000,
+        v: 150 + Math.random() * 250,
+      })),
+    })
   }
 
   useEffect(() => {
-    pull()
-    intervalRef.current = window.setInterval(pull, 1000)
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-    }
+    pull() // 只执行一次，不再自动刷新
   }, [])
 
   // 动态加载 echarts 并初始化图表实例
@@ -141,6 +130,9 @@ const PerformancePage: React.FC = () => {
           // 仅初始化饼图与折线图实例
           if (pieRef.current) chartInstances.current.pie = e.init(pieRef.current)
           if (lineRef.current) chartInstances.current.line = e.init(lineRef.current)
+
+          // 图表实例初始化完成后，手动触发一次数据更新
+          pull()
         } catch (err) {
           console.warn('echarts 初始化错误', err)
         }
@@ -240,13 +232,6 @@ const PerformancePage: React.FC = () => {
   return (
     <div className="performance-page" style={{ padding: 16 }}>
       <h2>性能监控</h2>
-
-      {!collectorAvailable && (
-        <div style={{ padding: 10, background: '#fff3cd', borderRadius: 6, marginTop: 12 }}>
-          未检测到 SDK 的 `performanceCollector` 实例。确认 SDK 在页面中初始化并导出
-          `performanceCollector` 或将其挂载到 `window.performanceCollector`。
-        </div>
-      )}
 
       <div
         style={{
