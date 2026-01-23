@@ -371,11 +371,23 @@ const UserProfile: React.FC = () => {
                     form={passwordForm}
                     layout="vertical"
                     autoComplete="off"
-                    onFinish={(values) => {
+                    onFinish={async (values) => {
                       console.log('修改密码:', values)
-                      // 这里可以添加提交到服务器的逻辑
-                      message.success('密码修改成功!')
-                      passwordForm.resetFields()
+                      try {
+                        const response = await authAPI.changePassword(
+                          values.currentPassword,
+                          values.newPassword
+                        )
+                        if (response.code === 200) {
+                          message.success(response.message || '密码修改成功!')
+                          passwordForm.resetFields()
+                        } else {
+                          message.error(response.message || '修改密码失败')
+                        }
+                      } catch (error) {
+                        console.error('修改密码失败:', error)
+                        message.error('修改密码失败，请稍后重试')
+                      }
                     }}
                   >
                     <Form.Item

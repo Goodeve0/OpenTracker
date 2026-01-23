@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
   register: '/api/auth/register',
   errors: '/api/errors',
   profile: '/api/profile',
+  changePassword: '/api/auth/change-password',
 }
 
 // API 响应格式
