@@ -5,6 +5,8 @@ interface StatsParams {
   startTime?: number
   endTime?: number
   limit?: number
+  page?: number
+  pageSize?: number
 }
 
 class StatsService {
@@ -47,6 +49,21 @@ class StatsService {
 
       case 'high_error_pages':
         return this.highErrorPages(params)
+
+      case 'error_list':
+        return this.errorList(params)
+
+      case 'api_errors':
+        return this.errorByType(params, 'api')
+
+      case 'js_errors':
+        return this.errorByType(params, 'js')
+
+      case 'crash_errors':
+        return this.errorByType(params, '页面崩溃')
+
+      case 'framework_errors':
+        return this.errorByType(params, 'framework')
 
       default:
         throw new Error(`未知统计类型: ${type}`)
@@ -100,12 +117,16 @@ class StatsService {
 
   //错误 Top N
   private async errorTopN({ startTime, endTime }: StatsParams, limit: number) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const list = await prisma.error.groupBy({
       by: ['errorType'],
       where: {
         timestamp: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
       },
       _count: {
@@ -116,13 +137,35 @@ class StatsService {
           errorType: 'desc',
         },
       },
-      take: limit,
     })
 
-    return list.map((item) => ({
-      name: item.errorType || 'Unknown',
-      count: item._count.errorType,
-    }))
+    // 错误类型映射
+    const errorTypeMap: Record<string, string> = {
+      js: 'JS错误',
+      api: 'API错误',
+      cors: '跨域错误',
+      framework: '框架错误',
+      页面崩溃: '页面崩溃',
+    }
+
+    // 直接使用数据库查询结果，不进行过滤
+    const formattedList = list
+      .map((item) => {
+        if (!item.errorType) return null
+
+        let displayName = item.errorType
+        if (errorTypeMap[item.errorType]) {
+          displayName = errorTypeMap[item.errorType]
+        }
+
+        return {
+          name: displayName,
+          count: item._count.errorType,
+        }
+      })
+      .filter((item): item is { name: string; count: number } => item !== null)
+
+    return formattedList.slice(0, limit)
   }
 
   //白屏率
@@ -135,7 +178,7 @@ class StatsService {
     const [blankCount, pv] = await Promise.all([
       prisma.blank_Screen.count({
         where: {
-          isBlank: 'true',
+          isBlank: true,
           timestamp: timeRange,
         },
       }),
@@ -311,12 +354,16 @@ class StatsService {
 
   //错误趋势
   private async errorTrends({ startTime, endTime }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const list = await prisma.error.groupBy({
-      by: ['timestamp'],
+      by: ['timestamp', 'errorType'],
       where: {
         timestamp: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
       },
       _count: {
@@ -327,19 +374,59 @@ class StatsService {
       },
     })
 
-    const map: Record<string, number> = {}
+    const dates = new Set<string>()
+    const errorTypes = new Set<string>()
+    const dataMap: Record<string, Record<string, number>> = {}
 
     list.forEach((item) => {
-      if (!item.timestamp) return
-      const day = item.timestamp.toISOString().slice(0, 10)
-      map[day] = (map[day] || 0) + (item._count as { id: number }).id
+      if (!item.timestamp || !item.errorType) return
+      const dayHour = item.timestamp.toISOString().slice(0, 13)
+      const errorType = item.errorType
+
+      dates.add(dayHour)
+      errorTypes.add(errorType)
+
+      if (!dataMap[dayHour]) {
+        dataMap[dayHour] = {}
+      }
+
+      dataMap[dayHour][errorType] =
+        (dataMap[dayHour][errorType] || 0) + (item._count as { id: number }).id
+    })
+
+    const sortedDates = Array.from(dates).sort()
+    const uniqueErrorTypes = Array.from(errorTypes)
+
+    // 错误类型映射
+    const errorTypeMap: Record<string, string> = {
+      js: 'JS错误',
+      api: 'API错误',
+      cors: '跨域错误',
+      framework: '框架错误',
+      页面崩溃: '页面崩溃',
+    }
+
+    const colors = ['#cf1322', '#1890ff', '#52c41a', '#faad14', '#722ed1']
+
+    const series = uniqueErrorTypes.map((errorType, index) => {
+      let displayName = errorType
+      if (errorTypeMap[errorType]) {
+        displayName = errorTypeMap[errorType]
+      }
+      return {
+        name: displayName,
+        type: 'line',
+        smooth: true,
+        data: sortedDates.map((day) => {
+          return dataMap[day]?.[errorType] || 0
+        }),
+        itemStyle: { color: colors[index % colors.length] },
+      }
     })
 
     return {
-      dates: Object.keys(map).sort(),
-      values: Object.keys(map)
-        .sort()
-        .map((day) => map[day]),
+      dates: sortedDates,
+      series,
     }
   }
 
@@ -348,7 +435,7 @@ class StatsService {
     const list = await prisma.blank_Screen.groupBy({
       by: ['timestamp'],
       where: {
-        isBlank: 'true',
+        isBlank: true,
         timestamp: {
           gte: startTime ? new Date(startTime) : undefined,
           lte: endTime ? new Date(endTime) : undefined,
@@ -383,7 +470,7 @@ class StatsService {
     const list = await prisma.blank_Screen.groupBy({
       by: ['pageUrl'],
       where: {
-        isBlank: 'true',
+        isBlank: true,
         timestamp: {
           gte: startTime ? new Date(startTime) : undefined,
           lte: endTime ? new Date(endTime) : undefined,
@@ -402,7 +489,7 @@ class StatsService {
 
     return list.map((item) => ({
       name: item.pageUrl || 'Unknown',
-      count: item._count.id,
+      count: (item._count as { id: number }).id,
     }))
   }
 
@@ -431,6 +518,71 @@ class StatsService {
       name: item.pageUrl || 'Unknown',
       count: item._count.id,
     }))
+  }
+
+  //错误列表
+  private async errorList({ startTime, endTime, page = 1, pageSize = 20 }: StatsParams) {
+    const skip = (page - 1) * pageSize
+    const take = pageSize
+
+    const [total, list] = await Promise.all([
+      prisma.error.count({
+        where: {
+          timestamp: {
+            gte: startTime ? new Date(startTime) : undefined,
+            lte: endTime ? new Date(endTime) : undefined,
+          },
+        },
+      }),
+      prisma.error.findMany({
+        where: {
+          timestamp: {
+            gte: startTime ? new Date(startTime) : undefined,
+            lte: endTime ? new Date(endTime) : undefined,
+          },
+        },
+        skip,
+        take,
+        orderBy: { timestamp: 'desc' },
+      }),
+    ])
+
+    return {
+      total,
+      list,
+      page,
+      pageSize,
+    }
+  }
+
+  //按错误类型查询
+  private async errorByType({ page = 1, pageSize = 20 }: StatsParams, errorType: string) {
+    const skip = (page - 1) * pageSize
+    const take = pageSize
+
+    // 直接查询所有错误，不限制时间范围
+    const [total, list] = await Promise.all([
+      prisma.error.count({
+        where: {
+          errorType,
+        },
+      }),
+      prisma.error.findMany({
+        where: {
+          errorType,
+        },
+        skip,
+        take,
+        orderBy: { timestamp: 'desc' },
+      }),
+    ])
+
+    return {
+      total,
+      list,
+      page,
+      pageSize,
+    }
   }
 }
 

@@ -16,7 +16,8 @@ class TrackService {
             pageUrl: data.pageUrl,
             userAgent: data.userAgent,
             timestamp,
-            extra: data,
+            extra: JSON.stringify(data),
+            project_id: data.project_id,
           },
         })
         break
@@ -29,7 +30,8 @@ class TrackService {
             pageUrl: data.pageUrl,
             userAgent: data.userAgent,
             timestamp,
-            extra: data,
+            extra: JSON.stringify(data),
+            project_id: data.project_id,
           },
         })
         break
@@ -42,7 +44,8 @@ class TrackService {
             firstPaint: data.firstPaint,
             pageUrl: data.pageUrl,
             timestamp,
-            extra: data,
+            extra: JSON.stringify(data),
+            project_id: data.project_id,
           },
         })
         break
@@ -54,7 +57,8 @@ class TrackService {
             checkPoints: data.checkPoints,
             pageUrl: data.pageUrl,
             timestamp,
-            extra: data,
+            extra: JSON.stringify(data),
+            project_id: data.project_id,
           },
         })
         break

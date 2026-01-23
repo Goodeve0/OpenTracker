@@ -1,7 +1,8 @@
-import React from 'react'
-import { Table, Tag, Space } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Table, Tag, Space, message, Spin } from 'antd'
 // 引入闪电图标（代表崩溃）和时钟图标（代表存活时间）
 import { ThunderboltOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { queryStatsData } from '../../../api/track'
 
 // 1. 定义数据契约
 interface CrashErrorItem {
@@ -13,16 +14,47 @@ interface CrashErrorItem {
 }
 
 const CrashErrorTable = () => {
-  // 2. 模拟假数据
-  const dataSource: CrashErrorItem[] = [
-    {
-      id: '1',
-      pageUrl: 'http://localhost:3000/big-data',
-      timestamp: '2023-12-11 16:45:00',
-      duration: '5m 20s', // 也就是用户打开页面5分20秒后崩了
-      platform: 'Windows',
-    },
-  ]
+  const [dataSource, setDataSource] = useState<CrashErrorItem[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetchCrashErrors()
+  }, [])
+
+  const fetchCrashErrors = async () => {
+    setLoading(true)
+    try {
+      const response = await queryStatsData({ type: 'crash_errors', page: 1, pageSize: 50 })
+      if (response.code === 200 && response.data) {
+        const { list } = response.data
+        // 处理后端返回的数据，转换为前端需要的格式
+        const processedData = list.map((item: any) => {
+          let extra: any = {}
+          try {
+            if (item.extra && typeof item.extra === 'string') {
+              extra = JSON.parse(item.extra)
+            }
+          } catch (e) {
+            console.error('解析 extra 字段失败:', e)
+          }
+
+          return {
+            id: item.id?.toString() || Math.random().toString(36).substr(2, 9),
+            pageUrl: item.pageUrl || '',
+            timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : '',
+            duration: extra.duration || '0s',
+            platform: extra.platform || 'Unknown',
+          }
+        })
+        setDataSource(processedData)
+      }
+    } catch (error) {
+      console.error('获取崩溃错误数据失败:', error)
+      message.error('获取崩溃错误数据失败')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // 3. 表格列配置
   const columns = [
@@ -66,7 +98,11 @@ const CrashErrorTable = () => {
 
   // 4. 返回布局
   // 崩溃记录通常比较简单，不需要点击详情弹窗，直接展示表格即可
-  return <Table rowKey="id" columns={columns} dataSource={dataSource} size="small" />
+  return (
+    <Spin spinning={loading} tip="加载中...">
+      <Table rowKey="id" columns={columns} dataSource={dataSource} size="small" />
+    </Spin>
+  )
 }
 
 export default CrashErrorTable

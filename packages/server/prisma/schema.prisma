@@ -8,14 +8,17 @@ datasource db {
 }
 
 model Behavior {
-  id        Int       @id @default(autoincrement())
-  event     String?   @db.VarChar(254)
-  target    String?   @db.VarChar(254)
-  timestamp DateTime? @db.Date @default(now())
-  userAgent String?   @db.VarChar(254)
-  pageUrl   String?   @db.VarChar(254)
-  extra     String?
-  createdAt DateTime? @db.Date @default(now())
+  id         Int       @id @default(autoincrement())
+  event      String?   @db.VarChar(254)
+  target     String?   @db.VarChar(254)
+  timestamp  DateTime? @db.Date @default(now())
+  userAgent  String?   @db.VarChar(254)
+  pageUrl    String?   @db.VarChar(254)
+  extra      String?
+  createdAt  DateTime? @db.Date @default(now())
+  project_id String?   @db.VarChar(255)
+
+  @@index([project_id], map: "idx_behavior_project")
 }
 
 model Blank_Screen {
@@ -26,20 +29,25 @@ model Blank_Screen {
   pageUrl     String?   @db.VarChar(254)
   extra       String?
   createdAt   DateTime? @db.Date @default(now())
+  project_id  String?   @db.VarChar(255)
 
+  @@index([project_id], map: "idx_blank_project")
   @@map("Blank Screen")
 }
 
 model Error {
-  id        Int       @id @default(autoincrement())
-  errorType String?   @db.VarChar(254)
-  message   String?
-  stack     String?
-  timestamp DateTime? @db.Date @default(now())
-  pageUrl   String?   @db.VarChar(254)
-  userAgent String?   @db.VarChar(254)
-  extra     String?
-  createdAt DateTime? @db.Date @default(now())
+  id         Int       @id @default(autoincrement())
+  errorType  String?   @db.VarChar(254)
+  message    String?
+  stack      String?
+  timestamp  DateTime? @db.Date @default(now())
+  pageUrl    String?   @db.VarChar(254)
+  userAgent  String?   @db.VarChar(254)
+  extra      String?
+  createdAt  DateTime? @db.Date @default(now())
+  project_id String?   @db.VarChar(255)
+
+  @@index([project_id], map: "idx_error_project")
 }
 
 model Performance {
@@ -51,10 +59,13 @@ model Performance {
   pageUrl    String?   @db.VarChar(254)
   extra      String?
   createdAt  DateTime? @db.Date @default(now())
+  project_id String?   @db.VarChar(255)
+
+  @@index([project_id], map: "idx_performance_project")
 }
 
 model Track_Event {
-  id          BigInt    @id
+  id          BigInt    @id @default(autoincrement())
   project_id  String?   @db.VarChar(254)
   type        String?   @db.VarChar(254)
   event_name  String?   @db.VarChar(254)
@@ -62,7 +73,7 @@ model Track_Event {
   page_url    String?
   sdk_version String?   @db.VarChar(254)
   ua          String?
-  created_at  DateTime? @db.Date
+  created_at  DateTime? @db.Date @default(now())
   raw_data    String?   @db.VarChar(254)
 
   @@map("Track Event")
