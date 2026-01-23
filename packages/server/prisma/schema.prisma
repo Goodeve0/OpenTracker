@@ -9,95 +9,76 @@ datasource db {
 
 model Behavior {
   id        Int       @id @default(autoincrement())
-  event     String?   @db.VarChar(100)
-  target    String?   @db.VarChar(255)
-  timestamp DateTime? @db.Timestamp(6)
-  userAgent String?   @db.VarChar(255)
-  pageUrl   String?   @db.VarChar(255)
-  extra     Json?     @db.Json
-  createdAt DateTime? @db.Timestamp(6)
-
-  @@index([pageUrl], map: "idx_behavior_pageUrl")
-  @@index([timestamp], map: "idx_behavior_time")
-  @@index([event], map: "idx_event")
-  @@index([target], map: "idx_target")
+  event     String?   @db.VarChar(254)
+  target    String?   @db.VarChar(254)
+  timestamp DateTime? @db.Date @default(now())
+  userAgent String?   @db.VarChar(254)
+  pageUrl   String?   @db.VarChar(254)
+  extra     String?
+  createdAt DateTime? @db.Date @default(now())
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model Blank_Screen {
   id          Int       @id @default(autoincrement())
-  isBlank     Boolean?
+  isBlank     String?   @db.VarChar(254)
   checkPoints String?
-  timestamp   DateTime? @db.Timestamp(6)
-  pageUrl     String?   @db.VarChar(255)
-  extra       Json?     @db.Json
-  createdAt   DateTime? @db.Timestamp(6)
+  timestamp   DateTime? @db.Date @default(now())
+  pageUrl     String?   @db.VarChar(254)
+  extra       String?
+  createdAt   DateTime? @db.Date @default(now())
 
-  @@index([timestamp], map: "idx_blank_time")
-  @@index([isBlank], map: "idx_isBlank")
   @@map("Blank Screen")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model Error {
   id        Int       @id @default(autoincrement())
-  errorType String?   @db.VarChar(50)
+  errorType String?   @db.VarChar(254)
   message   String?
   stack     String?
-  timestamp DateTime? @db.Timestamp(6)
-  pageUrl   String?   @db.VarChar(255)
-  userAgent String?   @db.VarChar(255)
-  extra     Json?     @db.Json
-  createdAt DateTime? @db.Timestamp(6)
-
-  @@index([timestamp], map: "idx_error_time")
-  @@index([errorType], map: "idx_error_type")
-  @@index([pageUrl], map: "idx_pageUrl")
+  timestamp DateTime? @db.Date @default(now())
+  pageUrl   String?   @db.VarChar(254)
+  userAgent String?   @db.VarChar(254)
+  extra     String?
+  createdAt DateTime? @db.Date @default(now())
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model Performance {
   id         Int       @id @default(autoincrement())
   loadTime   Int?
   domReady   Int?
   firstPaint Int?
-  timestamp  DateTime? @db.Timestamp(6)
-  pageUrl    String?   @db.VarChar(255)
-  extra      Json?     @db.Json
-  createdAt  DateTime? @db.Timestamp(6)
-
-  @@index([pageUrl], map: "idx_performance_pageUrl")
-  @@index([timestamp], map: "idx_performance_time")
+  timestamp  DateTime? @db.Date @default(now())
+  pageUrl    String?   @db.VarChar(254)
+  extra      String?
+  createdAt  DateTime? @db.Date @default(now())
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model Track_Event {
-  id          BigInt    @id @default(autoincrement())
-  project_id  String?   @db.VarChar(255)
-  type        String?   @db.VarChar(20)
-  event_name  String?   @db.VarChar(100)
-  user_id     String?   @db.VarChar(64)
+  id          BigInt    @id
+  project_id  String?   @db.VarChar(254)
+  type        String?   @db.VarChar(254)
+  event_name  String?   @db.VarChar(254)
+  user_id     String?   @db.VarChar(254)
   page_url    String?
-  sdk_version String?   @db.VarChar(20)
+  sdk_version String?   @db.VarChar(254)
   ua          String?
-  created_at  DateTime? @db.Timestamp(6)
-  raw_data    Json?
+  created_at  DateTime? @db.Date
+  raw_data    String?   @db.VarChar(254)
 
   @@map("Track Event")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model Users {
   id               Int       @id @default(autoincrement())
-  username         String?   @unique(map: "idx_users_username") @db.VarChar(100)
-  name             String?   @db.VarChar(100)
-  password         String?   @db.VarChar(255)
-  createdAt        DateTime? @db.Timestamp(6)
-  updatedAt        DateTime? @db.Timestamp(6)
-  telephone_number Int?      @map("telephone number")
-  email            String?   @db.VarChar(100)
-  gender           String?   @db.VarChar(10)
+  username         String?   @db.VarChar(254)
+  password         String?   @db.VarChar(254)
+  createdAt        DateTime? @db.Date @default(now())
+  updatedAt        DateTime? @db.Date @default(now())
+  telephone_number BigInt?
+  email            String?   @db.VarChar(254)
+  name             String?   @db.VarChar(254)
+  gender           String?   @db.VarChar(254)
   age              Int?
-  bio              String?   @db.Text
-  avatar           String?   @db.VarChar(255)
+  bio              String?
+  avatar           String?   @db.VarChar(254)
 }

@@ -135,7 +135,7 @@ class StatsService {
     const [blankCount, pv] = await Promise.all([
       prisma.blank_Screen.count({
         where: {
-          isBlank: true,
+          isBlank: 'true',
           timestamp: timeRange,
         },
       }),
@@ -191,7 +191,7 @@ class StatsService {
     list.forEach((item) => {
       if (!item.created_at) return
       const day = item.created_at.toISOString().slice(0, 10)
-      map[day] = (map[day] || 0) + item._count.id
+      map[day] = (map[day] || 0) + (item._count as { id: number }).id
     })
 
     return {
@@ -232,7 +232,7 @@ class StatsService {
 
     list.forEach((item) => {
       if (!item.ua) {
-        deviceMap.other += item._count.id
+        deviceMap.other += (item._count as { id: number }).id
         return
       }
 
@@ -243,11 +243,11 @@ class StatsService {
         ua.includes('iphone') ||
         ua.includes('ipad')
       ) {
-        deviceMap.mobile += item._count.id
+        deviceMap.mobile += (item._count as { id: number }).id
       } else if (ua.includes('tablet')) {
-        deviceMap.tablet += item._count.id
+        deviceMap.tablet += (item._count as { id: number }).id
       } else {
-        deviceMap.desktop += item._count.id
+        deviceMap.desktop += (item._count as { id: number }).id
       }
     })
 
@@ -279,7 +279,7 @@ class StatsService {
 
     return list.map((item) => ({
       name: item.event || 'Unknown',
-      count: item._count.id,
+      count: (item._count as { id: number }).id,
     }))
   }
 
@@ -332,7 +332,7 @@ class StatsService {
     list.forEach((item) => {
       if (!item.timestamp) return
       const day = item.timestamp.toISOString().slice(0, 10)
-      map[day] = (map[day] || 0) + item._count.id
+      map[day] = (map[day] || 0) + (item._count as { id: number }).id
     })
 
     return {
@@ -348,7 +348,7 @@ class StatsService {
     const list = await prisma.blank_Screen.groupBy({
       by: ['timestamp'],
       where: {
-        isBlank: true,
+        isBlank: 'true',
         timestamp: {
           gte: startTime ? new Date(startTime) : undefined,
           lte: endTime ? new Date(endTime) : undefined,
@@ -367,7 +367,7 @@ class StatsService {
     list.forEach((item) => {
       if (!item.timestamp) return
       const day = item.timestamp.toISOString().slice(0, 10)
-      map[day] = (map[day] || 0) + item._count.id
+      map[day] = (map[day] || 0) + (item._count as { id: number }).id
     })
 
     return {
@@ -383,7 +383,7 @@ class StatsService {
     const list = await prisma.blank_Screen.groupBy({
       by: ['pageUrl'],
       where: {
-        isBlank: true,
+        isBlank: 'true',
         timestamp: {
           gte: startTime ? new Date(startTime) : undefined,
           lte: endTime ? new Date(endTime) : undefined,

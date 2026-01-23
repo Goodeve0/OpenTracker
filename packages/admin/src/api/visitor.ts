@@ -45,7 +45,7 @@ export interface DeviceModel {
 
 // 创建 axios 实例
 const api = axios.create({
-  baseURL: '', // 空字符串，使用Vite代理
+  baseURL: API_BASE_URL, // 使用配置的API基础URL
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ const api = axios.create({
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('authToken')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -73,7 +73,7 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
+      localStorage.removeItem('authToken')
       // 检查当前页面是否已经是登录页面，避免登录失败时页面刷新
       // 登录页面的实际路径是 / 而不是 /login
       if (window.location.pathname !== '/') {

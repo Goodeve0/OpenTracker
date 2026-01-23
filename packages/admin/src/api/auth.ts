@@ -1,19 +1,26 @@
 import axios from 'axios'
 import { API_BASE_URL, API_ENDPOINTS, ApiResponse, LoginData, RegisterData } from './config'
 
-// 创建 axios 实例
+// 重新创建axios实例，确保配置正确
 const api = axios.create({
-  baseURL: '', // 空字符串，使用Vite代理
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: false,
 })
 
-// 请求拦截器
+// 移除所有现有拦截器
+api.interceptors.request.clear()
+api.interceptors.response.clear()
+
+// 添加新的请求拦截器
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
+    console.log('请求配置:', config)
+    const token = localStorage.getItem('authToken')
+    console.log('添加到请求头的token:', token)
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -24,16 +31,14 @@ api.interceptors.request.use(
   }
 )
 
-// 响应拦截器
+// 添加新的响应拦截器
 api.interceptors.response.use(
   (response) => {
     return response
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      // 检查当前页面是否已经是登录页面，避免登录失败时页面刷新
-      // 登录页面的实际路径是 / 而不是 /login
+      localStorage.removeItem('authToken')
       if (window.location.pathname !== '/') {
         window.location.href = '/' // 重定向到登录页面
       }
@@ -41,6 +46,35 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// 个人资料接口响应
+export interface UserProfileData {
+  user: {
+    id: string
+    username: string
+    name: string
+    email: string
+    telephone_number: string
+    gender: string
+    age: number
+    bio: string
+    avatar: string
+    createdAt: string
+    updatedAt: string
+  }
+}
+
+// 更新个人资料请求
+export interface UpdateProfileRequest {
+  username?: string
+  name?: string
+  email?: string
+  telephone_number?: string
+  gender?: string
+  age?: number
+  bio?: string
+  avatar?: string
+}
 
 // 认证相关 API
 export const authAPI = {
@@ -102,6 +136,97 @@ export const authAPI = {
       return {
         code: 500,
         message: '健康检查失败，请检查网络连接或稍后重试',
+        data: null,
+      }
+    }
+  },
+
+  // 获取个人资料
+  getProfile: async (): Promise<ApiResponse<UserProfileData>> => {
+    try {
+      const response = await api.get<ApiResponse<UserProfileData>>(API_ENDPOINTS.profile)
+      return response.data
+    } catch (error: any) {
+      if (error.response?.data) {
+        return error.response.data
+      }
+      return {
+        code: 500,
+        message: '获取个人资料失败，请检查网络连接或稍后重试',
+        data: null,
+      }
+    }
+  },
+
+  // 更新个人资料
+  updateProfile: async (data: UpdateProfileRequest): Promise<ApiResponse<UserProfileData>> => {
+    try {
+      console.log('=== 更新个人资料请求 ===')
+      const token = localStorage.getItem('authToken')
+      console.log('当前token:', token)
+
+      // 构造符合服务器要求的数据结构
+      // 服务器端实际处理逻辑期望age和telephone_number是string类型，会手动转换为number
+      const requestData: any = {
+        username: data.username,
+        name: data.name,
+        email: data.email,
+        // 服务器端期望telephone_number是string类型，会手动转换为number
+        telephone_number: data.telephone_number ? String(data.telephone_number) : undefined,
+        gender: data.gender,
+        // 服务器端期望age是string类型，会手动转换为number
+        age: data.age ? String(data.age) : undefined,
+        bio: data.bio,
+        avatar: data.avatar,
+      }
+
+      // 过滤掉undefined和null值，只保留实际要修改的字段
+      const filteredData = Object.fromEntries(
+        Object.entries(requestData).filter(([_, value]) => value !== undefined && value !== null)
+      )
+
+      console.log('最终请求数据:', JSON.stringify(filteredData, null, 2))
+
+      // 设置请求头
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        timeout: 10000,
+        withCredentials: false,
+      }
+
+      console.log('请求配置:', config)
+      console.log('请求URL:', API_BASE_URL + API_ENDPOINTS.profile)
+
+      // 发送请求
+      const response = await axios.put<ApiResponse<UserProfileData>>(
+        API_BASE_URL + API_ENDPOINTS.profile,
+        filteredData,
+        config
+      )
+
+      console.log('=== 更新个人资料响应 ===')
+      console.log('响应状态:', response.status)
+      console.log('响应数据:', JSON.stringify(response.data, null, 2))
+      return response.data
+    } catch (error: any) {
+      console.error('=== 更新个人资料错误 ===')
+      console.error('错误对象:', error)
+      if (error.response) {
+        console.error('错误响应状态:', error.response.status)
+        console.error('错误响应数据:', JSON.stringify(error.response.data, null, 2))
+        console.error('错误响应头:', error.response.headers)
+        return error.response.data
+      } else if (error.request) {
+        console.error('没有收到响应:', error.request)
+      } else {
+        console.error('请求配置错误:', error.message)
+      }
+      return {
+        code: 500,
+        message: '更新个人资料失败，请检查网络连接或稍后重试',
         data: null,
       }
     }
