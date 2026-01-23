@@ -35,6 +35,7 @@ import {
   PauseCircleOutlined,
 } from '@ant-design/icons'
 import { authAPI, UpdateProfileRequest } from '@/api/auth'
+import { useUser } from '@/context/UserContext'
 
 const { Option } = Select
 const { TabPane } = Tabs
@@ -64,6 +65,9 @@ interface ProjectData {
 }
 
 const UserProfile: React.FC = () => {
+  // 使用 UserContext 获取更新用户信息的方法
+  const { updateUserInfo } = useUser()
+
   // 用户数据状态
   const [userData, setUserData] = useState<UserData>({
     id: '1',
@@ -249,6 +253,8 @@ const UserProfile: React.FC = () => {
                           setUserData(response.data.user)
                           // 重置表单
                           userInfoForm.setFieldsValue(response.data.user)
+                          // 调用 UserContext 的 updateUserInfo 方法，更新 header 中的用户名
+                          await updateUserInfo()
                         } else {
                           message.error(response.message || '更新个人信息失败')
                         }
