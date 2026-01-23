@@ -5,6 +5,8 @@ interface StatsParams {
   startTime?: number
   endTime?: number
   limit?: number
+  userId: string // 添加用户ID
+  projectId?: string // 添加项目ID
 }
 
 class StatsService {
@@ -53,7 +55,7 @@ class StatsService {
     }
   }
   //性能均值
-  private async performanceAvg({ startTime, endTime }: StatsParams) {
+  private async performanceAvg({ startTime, endTime, userId }: StatsParams) {
     const list = await prisma.performance.findMany({
       where: {
         timestamp: {
@@ -99,7 +101,7 @@ class StatsService {
   }
 
   //错误 Top N
-  private async errorTopN({ startTime, endTime }: StatsParams, limit: number) {
+  private async errorTopN({ startTime, endTime, userId }: StatsParams, limit: number) {
     const list = await prisma.error.groupBy({
       by: ['errorType'],
       where: {
@@ -126,7 +128,7 @@ class StatsService {
   }
 
   //白屏率
-  private async blankRate({ startTime, endTime }: StatsParams) {
+  private async blankRate({ startTime, endTime, userId }: StatsParams) {
     const timeRange = {
       gte: startTime ? new Date(startTime) : undefined,
       lte: endTime ? new Date(endTime) : undefined,
@@ -142,6 +144,7 @@ class StatsService {
       prisma.track_Event.count({
         where: {
           created_at: timeRange,
+          project_id: userId, // 添加用户过滤
         },
       }),
     ])
@@ -169,7 +172,7 @@ class StatsService {
   }
 
   //访客趋势
-  private async visitorTrends({ startTime, endTime }: StatsParams) {
+  private async visitorTrends({ startTime, endTime, userId }: StatsParams) {
     const list = await prisma.track_Event.groupBy({
       by: ['created_at'],
       where: {
@@ -177,6 +180,7 @@ class StatsService {
           gte: startTime ? new Date(startTime) : undefined,
           lte: endTime ? new Date(endTime) : undefined,
         },
+        project_id: userId, // 添加用户过滤
       },
       _count: {
         id: true,
@@ -203,7 +207,7 @@ class StatsService {
   }
 
   //设备分布
-  private async visitorDevice({ startTime, endTime }: StatsParams) {
+  private async visitorDevice({ startTime, endTime, userId }: StatsParams) {
     const list = await prisma.track_Event.groupBy({
       by: ['ua'],
       where: {
@@ -211,6 +215,7 @@ class StatsService {
           gte: startTime ? new Date(startTime) : undefined,
           lte: endTime ? new Date(endTime) : undefined,
         },
+        project_id: userId, // 添加用户过滤
       },
       _count: {
         id: true,
@@ -258,7 +263,7 @@ class StatsService {
   }
 
   //事件分析
-  private async behaviorEvents({ startTime, endTime }: StatsParams) {
+  private async behaviorEvents({ startTime, endTime, userId }: StatsParams) {
     const list = await prisma.behavior.groupBy({
       by: ['event'],
       where: {
@@ -284,7 +289,7 @@ class StatsService {
   }
 
   //页面访问
-  private async behaviorPageViews({ startTime, endTime }: StatsParams) {
+  private async behaviorPageViews({ startTime, endTime, userId }: StatsParams) {
     const list = await prisma.behavior.groupBy({
       by: ['pageUrl'],
       where: {
@@ -310,7 +315,7 @@ class StatsService {
   }
 
   //错误趋势
-  private async errorTrends({ startTime, endTime }: StatsParams) {
+  private async errorTrends({ startTime, endTime, userId }: StatsParams) {
     const list = await prisma.error.groupBy({
       by: ['timestamp'],
       where: {
@@ -344,7 +349,7 @@ class StatsService {
   }
 
   //白屏趋势
-  private async whiteScreenTrends({ startTime, endTime }: StatsParams) {
+  private async whiteScreenTrends({ startTime, endTime, userId }: StatsParams) {
     const list = await prisma.blank_Screen.groupBy({
       by: ['timestamp'],
       where: {
@@ -379,7 +384,7 @@ class StatsService {
   }
 
   //白屏TOP页面
-  private async whiteScreenTopPages({ startTime, endTime }: StatsParams) {
+  private async whiteScreenTopPages({ startTime, endTime, userId }: StatsParams) {
     const list = await prisma.blank_Screen.groupBy({
       by: ['pageUrl'],
       where: {
@@ -407,7 +412,7 @@ class StatsService {
   }
 
   //高频报错页面
-  private async highErrorPages({ startTime, endTime }: StatsParams) {
+  private async highErrorPages({ startTime, endTime, userId }: StatsParams) {
     const list = await prisma.error.groupBy({
       by: ['pageUrl'],
       where: {
