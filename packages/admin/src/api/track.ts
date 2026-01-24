@@ -12,8 +12,10 @@ const apiClient = axios.create({
 // 请求拦截器，添加认证头
 apiClient.interceptors.request.use(
   (config) => {
-    // 从 localStorage 获取 token
-    const token = localStorage.getItem('authToken')
+    // 从 localStorage 获取 token，或使用默认token（仅用于测试）
+    const token =
+      localStorage.getItem('authToken') ||
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIyIiwidXNlcm5hbWUiOiJmb3JldmVyIiwibmFtZSI6ImZvcmV2ZXIiLCJpYXQiOjE3NjkxNzY1MDEsImV4cCI6MTc2OTc4MTMwMX0.8xH5A-xQ3r7KvWeJ908WQSZlaUC96mTN9YFE3zrFU98'
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }

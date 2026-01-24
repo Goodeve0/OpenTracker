@@ -65,6 +65,12 @@ class StatsService {
       case 'framework_errors':
         return this.errorByType(params, 'framework')
 
+      case 'customerSource':
+        return this.customerSource(params)
+
+      case 'customerGrowth':
+        return this.customerGrowth(params)
+
       default:
         throw new Error(`未知统计类型: ${type}`)
     }
@@ -759,6 +765,91 @@ class StatsService {
       page,
       pageSize,
     }
+  }
+
+  //客户来源分析
+  private async customerSource({ limit = 10 }: StatsParams) {
+    // 查询所有行为数据
+    const behaviors = await prisma.behavior.findMany({
+      select: {
+        extra: true,
+      },
+      take: 1000, // 限制查询数量以提高性能
+    })
+
+    // 按来源类型分组统计
+    const sourceMap = new Map<string, number>()
+    behaviors.forEach((item) => {
+      if (typeof item.extra === 'string') {
+        try {
+          const extra = JSON.parse(item.extra)
+          if (extra.source) {
+            const source = extra.source.toString()
+            const currentCount = sourceMap.get(source) || 0
+            sourceMap.set(source, currentCount + 1)
+          }
+        } catch (error) {
+          // 解析失败时忽略
+        }
+      }
+    })
+
+    // 转换为数组并计算占比
+    const total = Array.from(sourceMap.values()).reduce((sum, count) => sum + count, 0)
+    const sourceData = Array.from(sourceMap.entries())
+      .map(([name, count]) => ({
+        name: name || '其他来源',
+        value: total > 0 ? (count / total) * 100 : 0,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, limit)
+
+    return sourceData
+  }
+
+  //客户增长趋势
+  private async customerGrowth({ startTime, endTime }: StatsParams) {
+    // 查询指定时间范围内的行为数据
+    const behaviors = await prisma.behavior.findMany({
+      where: {
+        timestamp: {
+          gte: startTime ? new Date(startTime) : undefined,
+          lte: endTime ? new Date(endTime) : undefined,
+        },
+      },
+      select: {
+        timestamp: true,
+      },
+    })
+
+    // 按日期分组统计
+    const dateMap = new Map<string, number>()
+    behaviors.forEach((item) => {
+      if (item.timestamp) {
+        const date = item.timestamp.toISOString().split('T')[0]
+        const currentCount = dateMap.get(date) || 0
+        dateMap.set(date, currentCount + 1)
+      }
+    })
+
+    // 处理数据格式，计算新增用户、活跃用户和累计用户
+    let totalUsers = 0
+    const growthData = Array.from(dateMap.entries())
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .map(([dateStr]) => {
+        const newUsers = dateMap.get(dateStr) || 0
+        const activeUsers = newUsers // 简化处理，使用新增用户数作为活跃用户数
+        totalUsers += newUsers
+
+        return {
+          timestamp: new Date(dateStr),
+          newUsers,
+          activeUsers,
+          totalUsers,
+        }
+      })
+
+    return growthData
   }
 }
 

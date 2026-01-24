@@ -4,6 +4,7 @@ import { Pie } from '@ant-design/charts'
 import { PieChartOutlined } from '@ant-design/icons'
 import ChartWithAdd from '../../components/chart-with-add'
 import { ChartType } from '../../types'
+import { queryStatsData } from '../../api/track'
 
 // 客户来源数据类型
 interface CustomerSourceData {
@@ -16,65 +17,48 @@ const CustomerSource: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // 从 localStorage 获取行为数据
-  const getBehaviorsFromLocalStorage = (): any[] => {
-    try {
-      const behaviors = localStorage.getItem('behaviors')
-      return behaviors ? JSON.parse(behaviors) : []
-    } catch (error) {
-      console.error('从 localStorage 获取行为数据失败:', error)
-      return []
-    }
-  }
-
   // 获取客户来源数据
   const fetchSourceData = async () => {
     setLoading(true)
     setError(null)
     try {
-      // 从 localStorage 获取行为数据
-      const behaviors = getBehaviorsFromLocalStorage()
-
-      // 模拟客户来源数据（基于行为数据）
-      // 由于真实行为数据中可能没有来源信息，我们使用行为类型作为来源分类
-      const sourceCounts: Record<string, number> = {}
-
-      behaviors.forEach((behavior: any) => {
-        const sourceType = behavior.type || 'direct' // 使用行为类型作为来源
-        sourceCounts[sourceType] = (sourceCounts[sourceType] || 0) + 1
+      // 从API获取客户来源数据
+      const response = await queryStatsData({
+        type: 'customerSource',
+        limit: 10,
       })
 
-      // 转换为用户友好的来源名称
-      const sourceMapping: Record<string, string> = {
-        behavior: '直接访问',
-        page_view: '页面访问',
-        click: '点击事件',
-        scroll: '滚动事件',
-        search: '搜索事件',
-        direct: '直接访问',
-        default: '其他来源',
-      }
+      if (response.code === 200 && response.data) {
+        // 来源名称映射（英文转中文）
+        const sourceNameMap: Record<string, string> = {
+          direct: '直接访问',
+          organic: '自然搜索',
+          social: '社交媒体',
+          referral: '推荐访问',
+          mobile: '移动设备',
+          email: '邮件营销',
+          paid: '付费广告',
+        }
 
-      // 计算总行为数
-      const totalBehaviors = behaviors.length
+        // 处理后端返回的数据，将value格式化为两位小数
+        const sourceData: any[] = response.data
+          .map((item: any) => ({
+            name: sourceNameMap[item.name] || '其他来源',
+            value: typeof item.value === 'number' ? Number(item.value.toFixed(2)) : 0,
+          }))
+          .filter((item) => item.value > 0)
+          .sort((a, b) => b.value - a.value)
 
-      // 生成来源数据
-      const sourceData: CustomerSourceData[] = Object.entries(sourceCounts)
-        .map(([key, value]) => ({
-          name: sourceMapping[key] || sourceMapping['default'],
-          value: totalBehaviors > 0 ? (value / totalBehaviors) * 100 : 0,
-        }))
-        .sort((a, b) => b.value - a.value) // 按占比降序排序
-
-      // 如果没有数据，返回空数组
-      if (sourceData.length === 0) {
-        setData([])
-      } else {
+        console.log('饼图数据:', sourceData)
         setData(sourceData)
+      } else {
+        setError('获取客户来源数据失败')
+        setData([])
       }
     } catch (err) {
-      setError('获取客户来源数据失败')
       console.error('获取客户来源数据失败:', err)
+      setError('获取客户来源数据失败')
+      setData([])
     } finally {
       setLoading(false)
     }
@@ -117,12 +101,24 @@ const CustomerSource: React.FC = () => {
                 data={data}
                 angleField="value"
                 colorField="name"
-                color={['#1890ff', '#52c41a', '#722ed1']}
+                color={['#1890ff', '#52c41a', '#fa8c16', '#722ed1', '#eb2f96']}
                 label={{
-                  type: 'outer',
-                  content: (datum: any) => `${datum.name}: ${datum.value}%`,
+                  visible: true,
+                  formatter: (datum: any) => {
+                    if (!datum || typeof datum.value !== 'number') {
+                      return ''
+                    }
+                    return `${datum.value.toFixed(2)}%`
+                  },
                 }}
-                tooltip={{ formatter: (datum: any) => `${datum.name}: ${datum.value}%` }}
+                tooltip={{
+                  formatter: (datum: any) => {
+                    if (!datum || typeof datum.value !== 'number') {
+                      return ''
+                    }
+                    return `${datum.name}: ${datum.value.toFixed(2)}%`
+                  },
+                }}
               />
             </div>
 
@@ -143,13 +139,13 @@ const CustomerSource: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{item.name}</span>
-                        <span className="text-gray-500">{item.value}%</span>
+                        <span className="text-gray-500">{item.value.toFixed(2)}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                         <div
                           className="h-1.5 rounded-full"
                           style={{
-                            width: `${item.value}%`,
+                            width: `${item.value.toFixed(2)}%`,
                             backgroundColor: ['#1890ff', '#52c41a', '#722ed1'][index],
                           }}
                         ></div>
