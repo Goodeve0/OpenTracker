@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Spin, Empty } from 'antd'
 import * as echarts from 'echarts'
+import { queryStatsData } from '../../api/track'
 
 interface PerformanceTrendsChartProps {
   title?: string
@@ -16,7 +17,7 @@ interface MetricHistoryPoint {
 const PerformanceTrendsChart: React.FC<PerformanceTrendsChartProps> = ({
   title = '性能趋势',
   height = 300,
-  loading = false,
+  loading: propLoading = false,
 }) => {
   const chartRef = React.useRef<HTMLDivElement>(null)
   const chartInstance = React.useRef<echarts.ECharts | null>(null)
@@ -31,44 +32,90 @@ const PerformanceTrendsChart: React.FC<PerformanceTrendsChartProps> = ({
     resourceLoad: [],
   })
 
-  // 从性能收集器获取真实数据
-  // 禁用从性能收集器获取真实数据，只使用静态mock数据
-  const pullPerformanceData = () => {
-    // 什么都不做，直接返回
-    return
+  // 本地加载状态
+  const [loading, setLoading] = useState(false)
+
+  // 从后端API获取性能数据
+  const pullPerformanceData = async () => {
+    try {
+      setLoading(true)
+      // 获取性能均值数据
+      const response = await queryStatsData({ type: 'performance_avg' })
+      if (response.code === 200 && response.data) {
+        const { dates, loadTimeAvg, firstPaintAvg, longTaskAvg, fpsAvg, resourceLoadAvg } =
+          response.data
+
+        // 转换数据格式为前端需要的格式
+        const formattedHistories: Record<string, MetricHistoryPoint[]> = {
+          inp: [],
+          cls: [],
+          longTask: [],
+          fps: [],
+          resourceLoad: [],
+        }
+
+        // 确保有数据
+        if (dates.length > 0) {
+          // 使用加载时间作为资源加载时间
+          formattedHistories.resourceLoad = dates.map((date, index) => ({
+            t: new Date(date).getTime(),
+            v: resourceLoadAvg[index] || 0,
+          }))
+
+          // 使用首次绘制时间作为其他指标的参考
+          formattedHistories.inp = dates.map((date, index) => ({
+            t: new Date(date).getTime(),
+            v: firstPaintAvg[index] || 0,
+          }))
+
+          // 使用longTaskAvg作为长任务时间
+          formattedHistories.longTask = dates.map((date, index) => ({
+            t: new Date(date).getTime(),
+            v: longTaskAvg[index] || 0,
+          }))
+
+          // 使用fpsAvg作为帧率
+          formattedHistories.fps = dates.map((date, index) => ({
+            t: new Date(date).getTime(),
+            v: fpsAvg[index] || 0,
+          }))
+
+          // cls暂时使用默认值
+          formattedHistories.cls = dates.map((date) => ({
+            t: new Date(date).getTime(),
+            v: 0.1,
+          }))
+        }
+        // 如果没有数据，保持空数组
+
+        setHistories(formattedHistories)
+      }
+    } catch (error) {
+      console.error('获取性能数据失败:', error)
+      // 错误时保持空数据
+      setHistories({
+        inp: [],
+        cls: [],
+        longTask: [],
+        fps: [],
+        resourceLoad: [],
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // 初始化图表和静态数据
+  // 初始化图表和数据
   useEffect(() => {
     if (!chartRef.current) return
 
     chartInstance.current = echarts.init(chartRef.current)
 
-    // 使用静态的mock数据，不再自动刷新
-    const now = Date.now()
-    // 生成合理的时间序列数据，确保图表能正常显示
-    setHistories({
-      inp: Array.from({ length: 20 }, (_, i) => ({
-        t: now - (20 - i) * 1000,
-        v: 200 + Math.random() * 300,
-      })),
-      cls: Array.from({ length: 20 }, (_, i) => ({
-        t: now - (20 - i) * 1000,
-        v: 0.05 + Math.random() * 0.15,
-      })),
-      longTask: Array.from({ length: 20 }, (_, i) => ({
-        t: now - (20 - i) * 1000,
-        v: 10 + Math.random() * 40,
-      })),
-      fps: Array.from({ length: 20 }, (_, i) => ({
-        t: now - (20 - i) * 1000,
-        v: 50 + Math.random() * 10,
-      })),
-      resourceLoad: Array.from({ length: 20 }, (_, i) => ({
-        t: now - (20 - i) * 1000,
-        v: 150 + Math.random() * 250,
-      })),
-    })
+    // 初始加载数据
+    pullPerformanceData()
+
+    // 设置定时刷新
+    intervalRef.current = window.setInterval(pullPerformanceData, 60000) // 每分钟刷新一次
 
     const handleResize = () => {
       chartInstance.current?.resize()
@@ -130,31 +177,13 @@ const PerformanceTrendsChart: React.FC<PerformanceTrendsChartProps> = ({
       }
     })
 
-    // 调整图表配置，增加底部空间，避免图例和横轴重叠
+    // 与原页面完全相同的图表配置，不添加任何额外选项
     const opt = {
       tooltip: { trigger: 'axis' },
-      legend: {
-        data: seriesNames,
-        bottom: 'bottom', // 将图例放在底部，与横轴保持距离
-      },
-      grid: {
-        left: '1%',
-        right: '1%',
-        bottom: '25%', // 增加底部空间，确保横轴标签和图例不重叠
-        top: '15%', // 增加顶部空间
-        containLabel: true,
-      },
-      xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        data: timesLabels,
-        axisLabel: {
-          margin: 10, // 增加标签与轴线的距离
-          fontSize: 12, // 减小字体大小
-        },
-      },
+      legend: { data: seriesNames },
+      xAxis: { type: 'category', data: timesLabels },
       yAxis: { type: 'value' },
-      series: series,
+      series,
     }
 
     try {
