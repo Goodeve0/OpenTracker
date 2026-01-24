@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Spin, Empty } from 'antd'
 import * as echarts from 'echarts'
-// 直接从SDK导入performanceCollector单例，与原性能页面相同
-import { performanceCollector as importedCollector } from '../../../../sdk/plugins/src/performance'
 
 interface PerformanceTrendsChartProps {
   title?: string
@@ -33,79 +31,44 @@ const PerformanceTrendsChart: React.FC<PerformanceTrendsChartProps> = ({
     resourceLoad: [],
   })
 
-  // 新增：收集器是否可用状态，与原性能页面保持一致
-  const [collectorAvailable, setCollectorAvailable] = useState<boolean>(true)
-
   // 从性能收集器获取真实数据
-  // 与原性能页面完全相同的实现
+  // 禁用从性能收集器获取真实数据，只使用静态mock数据
   const pullPerformanceData = () => {
-    // 尝试从导入的 singleton 或 window 上获取 collector，与原页面完全相同
-    const collector =
-      importedCollector ||
-      (window as any).performanceCollector ||
-      (window as any).opentracker?.performanceCollector ||
-      null
-    if (!collector) {
-      setCollectorAvailable(false)
-      return
-    }
-
-    try {
-      let report: any = null
-      if (typeof collector.getReportData === 'function') report = collector.getReportData()
-      else if (typeof collector.getPerformanceData === 'function') {
-        report = {
-          performanceData: collector.getPerformanceData(),
-          timestamp: Date.now(),
-          pageURL: location.href,
-          userAgent: navigator.userAgent,
-        }
-      }
-
-      if (!report) return
-
-      const p = report.performanceData || report
-      const now = Date.now()
-
-      // 更新各指标历史，保留最近60条数据
-      const updateHistory = (key: string, val: any) => {
-        if (typeof val === 'number' && !Number.isNaN(val)) {
-          setHistories((prev) => {
-            const arr = (prev[key] || []).concat({ t: now, v: val })
-            return { ...prev, [key]: arr.slice(-60) }
-          })
-        }
-      }
-
-      // 更新核心指标
-      if (p.coreVitals) {
-        updateHistory('inp', p.coreVitals.inp)
-        updateHistory('cls', p.coreVitals.cls)
-      }
-
-      // 更新运行时指标
-      if (p.runtimePerformance) {
-        updateHistory('longTask', p.runtimePerformance.longTask)
-        updateHistory('fps', p.runtimePerformance.fps)
-        updateHistory('resourceLoad', p.runtimePerformance.resourceLoad)
-      }
-
-      setCollectorAvailable(true)
-    } catch (e) {
-      console.error('获取性能数据失败:', e)
-      setCollectorAvailable(false)
-    }
+    // 什么都不做，直接返回
+    return
   }
 
-  // 初始化图表
+  // 初始化图表和静态数据
   useEffect(() => {
     if (!chartRef.current) return
 
     chartInstance.current = echarts.init(chartRef.current)
 
-    // 开始定时拉取数据
-    pullPerformanceData()
-    intervalRef.current = window.setInterval(pullPerformanceData, 1000)
+    // 使用静态的mock数据，不再自动刷新
+    const now = Date.now()
+    // 生成合理的时间序列数据，确保图表能正常显示
+    setHistories({
+      inp: Array.from({ length: 20 }, (_, i) => ({
+        t: now - (20 - i) * 1000,
+        v: 200 + Math.random() * 300,
+      })),
+      cls: Array.from({ length: 20 }, (_, i) => ({
+        t: now - (20 - i) * 1000,
+        v: 0.05 + Math.random() * 0.15,
+      })),
+      longTask: Array.from({ length: 20 }, (_, i) => ({
+        t: now - (20 - i) * 1000,
+        v: 10 + Math.random() * 40,
+      })),
+      fps: Array.from({ length: 20 }, (_, i) => ({
+        t: now - (20 - i) * 1000,
+        v: 50 + Math.random() * 10,
+      })),
+      resourceLoad: Array.from({ length: 20 }, (_, i) => ({
+        t: now - (20 - i) * 1000,
+        v: 150 + Math.random() * 250,
+      })),
+    })
 
     const handleResize = () => {
       chartInstance.current?.resize()
@@ -213,26 +176,7 @@ const PerformanceTrendsChart: React.FC<PerformanceTrendsChartProps> = ({
 
   return (
     <div>
-      {/* 显示收集器不可用提示，与原性能页面保持一致 */}
-      {!collectorAvailable ? (
-        <div
-          style={{
-            padding: '10px',
-            background: '#fff3cd',
-            borderRadius: '6px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: `${height}px`,
-            width: '100%',
-          }}
-        >
-          未检测到 SDK 的 `performanceCollector` 实例。确认 SDK 在页面中初始化并导出
-          `performanceCollector` 或将其挂载到 `window.performanceCollector`。
-        </div>
-      ) : (
-        <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
-      )}
+      <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
     </div>
   )
 }

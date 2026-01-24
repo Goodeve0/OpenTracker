@@ -20,6 +20,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { removeToken } from '@/utils/token'
+import { useUser } from '@/context/UserContext'
 
 const { Header } = Layout
 const { Title } = Typography
@@ -29,6 +30,9 @@ const HeaderComponent: React.FC = () => {
   const navigate = useNavigate()
   const [showSearch, setShowSearch] = useState(false)
   const [searchValue, setSearchValue] = useState('')
+
+  // 使用 UserContext 获取用户名
+  const { username } = useUser()
 
   const handleLogout = () => {
     removeToken()
@@ -156,7 +160,7 @@ const HeaderComponent: React.FC = () => {
         >
           <Space style={{ cursor: 'pointer' }}>
             <Avatar icon={<UserOutlined />} />
-            <span>管理员</span>
+            <span>{username}</span>
           </Space>
         </Dropdown>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import HeaderComponent from '@/components/header'
 import {
   Card,
@@ -34,6 +34,8 @@ import {
   PlayCircleOutlined,
   PauseCircleOutlined,
 } from '@ant-design/icons'
+import { authAPI, UpdateProfileRequest } from '@/api/auth'
+import { useUser } from '@/context/UserContext'
 
 const { Option } = Select
 const { TabPane } = Tabs
@@ -45,7 +47,7 @@ interface UserData {
   gender: '男' | '女' | string
   age: number
   email: string
-  phone: string
+  telephone_number: string
   bio: string
   avatar: string
 }
@@ -63,17 +65,23 @@ interface ProjectData {
 }
 
 const UserProfile: React.FC = () => {
-  // 模拟用户数据
-  const [userData] = useState<UserData>({
+  // 使用 UserContext 获取更新用户信息的方法
+  const { updateUserInfo } = useUser()
+
+  // 用户数据状态
+  const [userData, setUserData] = useState<UserData>({
     id: '1',
     username: 'zhangsan',
     gender: '男',
     age: 28,
     email: 'zhangsan@example.com',
-    phone: '13800138000',
+    telephone_number: '13800138000',
     bio: '这是一段个人简介，介绍自己的兴趣爱好和特长。',
     avatar: 'https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png',
   })
+
+  // 加载状态
+  const [loading, setLoading] = useState(false)
 
   // 模拟项目数据
   const [projects] = useState<ProjectData[]>([
@@ -144,6 +152,31 @@ const UserProfile: React.FC = () => {
     },
   }
 
+  // 获取个人资料
+  const fetchUserData = async () => {
+    setLoading(true)
+    try {
+      const response = await authAPI.getProfile()
+      if (response.code === 200 && response.data?.user) {
+        const user = response.data.user
+        setUserData(user)
+        userInfoForm.setFieldsValue(user)
+      } else {
+        message.error(response.message || '获取个人资料失败')
+      }
+    } catch (error) {
+      console.error('获取个人资料失败:', error)
+      message.error('获取个人资料失败，请稍后重试')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 组件挂载时获取个人资料
+  useEffect(() => {
+    fetchUserData()
+  }, [])
+
   return (
     <div>
       <HeaderComponent />
@@ -196,7 +229,7 @@ const UserProfile: React.FC = () => {
                           </div>
                           <div className="info-item">
                             <span className="info-label">手机号</span>
-                            <span className="info-value">{userData.phone}</span>
+                            <span className="info-value">{userData.telephone_number}</span>
                           </div>
                         </div>
                       </Col>
@@ -211,11 +244,24 @@ const UserProfile: React.FC = () => {
                     layout="vertical"
                     initialValues={userData}
                     autoComplete="off"
-                    onFinish={(values) => {
-                      console.log('修改个人信息:', values)
-                      // 这里可以添加提交到服务器的逻辑
-                      message.success('个人信息修改成功!')
-                      userInfoForm.resetFields()
+                    onFinish={async (values) => {
+                      try {
+                        const response = await authAPI.updateProfile(values as UpdateProfileRequest)
+                        if (response.code === 200 && response.data?.user) {
+                          message.success('个人信息修改成功!')
+                          // 更新本地用户数据
+                          setUserData(response.data.user)
+                          // 重置表单
+                          userInfoForm.setFieldsValue(response.data.user)
+                          // 调用 UserContext 的 updateUserInfo 方法，更新 header 中的用户名
+                          await updateUserInfo()
+                        } else {
+                          message.error(response.message || '更新个人信息失败')
+                        }
+                      } catch (error) {
+                        console.error('更新个人信息失败:', error)
+                        message.error('更新个人信息失败，请稍后重试')
+                      }
                     }}
                   >
                     <Row gutter={[24, 24]}>
@@ -288,7 +334,7 @@ const UserProfile: React.FC = () => {
                           </Col>
                           <Col xs={24} sm={12}>
                             <Form.Item
-                              name="phone"
+                              name="telephone_number"
                               label="手机号"
                               rules={[
                                 { required: true, message: '请输入手机号' },
@@ -296,7 +342,7 @@ const UserProfile: React.FC = () => {
                               ]}
                             >
                               <Input
-                                type="number"
+                                type="text"
                                 prefix={<PhoneOutlined />}
                                 placeholder="请输入手机号"
                               />
@@ -331,11 +377,23 @@ const UserProfile: React.FC = () => {
                     form={passwordForm}
                     layout="vertical"
                     autoComplete="off"
-                    onFinish={(values) => {
+                    onFinish={async (values) => {
                       console.log('修改密码:', values)
-                      // 这里可以添加提交到服务器的逻辑
-                      message.success('密码修改成功!')
-                      passwordForm.resetFields()
+                      try {
+                        const response = await authAPI.changePassword(
+                          values.currentPassword,
+                          values.newPassword
+                        )
+                        if (response.code === 200) {
+                          message.success(response.message || '密码修改成功!')
+                          passwordForm.resetFields()
+                        } else {
+                          message.error(response.message || '修改密码失败')
+                        }
+                      } catch (error) {
+                        console.error('修改密码失败:', error)
+                        message.error('修改密码失败，请稍后重试')
+                      }
                     }}
                   >
                     <Form.Item

@@ -4,7 +4,6 @@ import statsService from '../services/statsService'
 class StatsController {
   async getStats(ctx: Context) {
     const { type, startTime, endTime } = ctx.request.query
-    const userInfo = ctx.state.user // 从中间件获取用户信息
 
     if (!type) {
       ctx.status = 400
@@ -42,7 +41,6 @@ class StatsController {
         type: type as string,
         startTime: startTime ? Number(startTime) : undefined,
         endTime: endTime ? Number(endTime) : undefined,
-        userId: userInfo.userId, // 传递用户ID
       })
 
       ctx.body = {

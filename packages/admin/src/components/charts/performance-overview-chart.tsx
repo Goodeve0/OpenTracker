@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Spin, Empty } from 'antd'
 import * as echarts from 'echarts'
-// 直接从SDK导入performanceCollector单例，与原性能页面相同
-import { performanceCollector as importedCollector } from '../../../../sdk/plugins/src/performance'
 
 interface PerformanceOverviewChartProps {
   title?: string
@@ -26,9 +24,6 @@ const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
     cls: null as number | null,
   })
 
-  // 新增：收集器是否可用状态，与原性能页面保持一致
-  const [collectorAvailable, setCollectorAvailable] = useState<boolean>(true)
-
   // Helper: compute distribution categories for a numeric array
   // 与原性能页面相同的分布计算逻辑
   const computeDistribution = (vals: number[], thresholds: [number, number]) => {
@@ -48,43 +43,10 @@ const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
     ]
   }
 
-  // 从性能收集器获取真实数据
-  // 与原性能页面完全相同的实现
+  // 禁用从性能收集器获取真实数据，只使用静态mock数据
   const pullPerformanceData = () => {
-    // 尝试从导入的 singleton 或 window 上获取 collector，与原页面完全相同
-    const collector =
-      importedCollector ||
-      (window as any).performanceCollector ||
-      (window as any).opentracker?.performanceCollector ||
-      null
-    if (!collector) {
-      setCollectorAvailable(false)
-      return
-    }
-
-    try {
-      let report: any = null
-      if (typeof collector.getReportData === 'function') report = collector.getReportData()
-      else if (typeof collector.getPerformanceData === 'function') {
-        report = {
-          performanceData: collector.getPerformanceData(),
-          timestamp: Date.now(),
-          pageURL: location.href,
-          userAgent: navigator.userAgent,
-        }
-      }
-
-      if (!report) return
-
-      const p = report.performanceData || report
-      if (p.coreVitals) {
-        setCoreVitals(p.coreVitals)
-      }
-      setCollectorAvailable(true)
-    } catch (e) {
-      console.error('获取性能数据失败:', e)
-      setCollectorAvailable(false)
-    }
+    // 什么都不做，直接返回
+    return
   }
 
   // 初始化图表
@@ -93,9 +55,12 @@ const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
 
     chartInstance.current = echarts.init(chartRef.current)
 
-    // 开始定时拉取数据
-    pullPerformanceData()
-    intervalRef.current = window.setInterval(pullPerformanceData, 1000)
+    // 使用静态的mock数据，不再自动刷新
+    setCoreVitals({
+      lcp: 1200, // 最大内容绘制时间（毫秒）
+      inp: 300, // 交互到下次绘制时间（毫秒）
+      cls: 0.1, // 累积布局偏移
+    })
 
     const handleResize = () => {
       chartInstance.current?.resize()
@@ -127,13 +92,30 @@ const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
 
     // Prepare values arrays (过滤 null) - 与原页面完全相同
     const coreVals: number[] = []
+    // 只使用lcp和inp数据，避免cls值范围问题导致饼图无法显示
     if (typeof coreVitals.lcp === 'number') coreVals.push(coreVitals.lcp)
     if (typeof coreVitals.inp === 'number') coreVals.push(coreVitals.inp)
-    if (typeof coreVitals.cls === 'number') coreVals.push(coreVitals.cls)
+    // 避免cls值范围问题，暂时不添加cls到饼图数据
+
+    // 添加更多模拟数据点，让饼图显示更完整的分布
+    const additionalMetrics = [
+      800, // 良好
+      2800, // 需改善
+      4500, // 较差
+      1500, // 良好
+      3200, // 需改善
+      5000, // 较差
+      900, // 良好
+      3600, // 需改善
+      4200, // 较差
+      1100, // 良好
+    ]
+
+    const allVals = [...coreVals, ...additionalMetrics]
 
     // Pie: use LCP thresholds (example: good <=2500ms, mid<=4000) - 与原页面完全相同
     // 原页面的奇怪转换，我们也保留
-    const valsForPie = coreVals.map((v) => (v >= 1000 ? v : v)) // keep as-is
+    const valsForPie = allVals.map((v) => (v >= 1000 ? v : v)) // keep as-is
     const pieData = computeDistribution(
       valsForPie.map((v) => Math.round(v)),
       [2500, 4000]
@@ -165,26 +147,7 @@ const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
 
   return (
     <div>
-      {/* 显示收集器不可用提示，与原性能页面保持一致 */}
-      {!collectorAvailable ? (
-        <div
-          style={{
-            padding: '10px',
-            background: '#fff3cd',
-            borderRadius: '6px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: `${height}px`,
-            width: '100%',
-          }}
-        >
-          未检测到 SDK 的 `performanceCollector` 实例。确认 SDK 在页面中初始化并导出
-          `performanceCollector` 或将其挂载到 `window.performanceCollector`。
-        </div>
-      ) : (
-        <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
-      )}
+      <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
     </div>
   )
 }

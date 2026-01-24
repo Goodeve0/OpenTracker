@@ -3,6 +3,21 @@ import { authMiddleware } from '../middleware/authMiddleware'
 import prisma from '../lib/prisma'
 const router = new Router()
 
+// 定义用户选择字段类型
+interface UserSelect {
+  id: number
+  username: string | null
+  name: string | null
+  email: string | null
+  telephone_number: string | null
+  gender: string | null
+  age: number | null
+  bio: string | null
+  avatar: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
+}
+
 const createResponse = <T>(code: number, message: string, data?: T) => {
   return {
     code,
@@ -20,7 +35,7 @@ router.get('/api/profile', authMiddleware, async (ctx) => {
 
   try {
     // 从数据库获取完整用户信息
-    const user = await prisma.users.findUnique({
+    const user = (await prisma.users.findUnique({
       where: { id: parseInt(userInfo.userId) },
       select: {
         id: true,
@@ -35,7 +50,7 @@ router.get('/api/profile', authMiddleware, async (ctx) => {
         createdAt: true,
         updatedAt: true,
       },
-    })
+    })) as unknown as UserSelect
 
     if (!user) {
       ctx.status = 404
@@ -49,7 +64,7 @@ router.get('/api/profile', authMiddleware, async (ctx) => {
         username: user.username || '',
         name: user.name,
         email: user.email,
-        phone: user.telephone_number?.toString(),
+        telephone_number: user.telephone_number ? user.telephone_number.toString() : '',
         gender: user.gender,
         age: user.age,
         bio: user.bio,
@@ -70,9 +85,9 @@ interface UpdateProfileRequest {
   username?: string
   name?: string
   email?: string
-  phone?: string
+  telephone_number?: string
   gender?: string
-  age?: number
+  age?: number | string
   bio?: string
   avatar?: string
 }
@@ -80,16 +95,19 @@ interface UpdateProfileRequest {
 // 更新用户信息（需要 Token 验证）
 router.put('/api/profile', authMiddleware, async (ctx) => {
   const userInfo = ctx.state.user
-  const { username, name, email, phone, gender, age, bio, avatar } = ctx.request
+  const { username, name, email, telephone_number, gender, age, bio, avatar } = ctx.request
     .body as UpdateProfileRequest
+
+  // 类型转换：将字符串类型的 age 转换为数字
+  const parsedAge = age !== undefined ? (typeof age === 'string' ? parseInt(age) : age) : undefined
 
   console.log('更新用户信息，当前用户:', userInfo, '更新数据:', {
     username,
     name,
     email,
-    phone,
+    telephone_number,
     gender,
-    age,
+    age: parsedAge,
     bio,
     avatar,
   })
@@ -107,7 +125,7 @@ router.put('/api/profile', authMiddleware, async (ctx) => {
       }
     }
 
-    // 准备更新数据，将phone映射为telephone_number
+    // 准备更新数据 - 使用 any 类型避免类型不匹配问题
     const userUpdateData: any = {
       updatedAt: new Date(),
     }
@@ -121,14 +139,14 @@ router.put('/api/profile', authMiddleware, async (ctx) => {
     if (email !== undefined) {
       userUpdateData.email = email
     }
-    if (phone !== undefined) {
-      userUpdateData.telephone_number = phone ? parseInt(phone) : undefined
+    if (telephone_number !== undefined) {
+      userUpdateData.telephone_number = telephone_number ? BigInt(telephone_number) : undefined
     }
     if (gender !== undefined) {
       userUpdateData.gender = gender
     }
-    if (age !== undefined) {
-      userUpdateData.age = age
+    if (parsedAge !== undefined) {
+      userUpdateData.age = parsedAge
     }
     if (bio !== undefined) {
       userUpdateData.bio = bio
@@ -138,7 +156,7 @@ router.put('/api/profile', authMiddleware, async (ctx) => {
     }
 
     // 更新用户信息
-    const updatedUser = await prisma.users.update({
+    const updatedUser = (await prisma.users.update({
       where: { id: parseInt(userInfo.userId) },
       data: userUpdateData,
       select: {
@@ -154,7 +172,7 @@ router.put('/api/profile', authMiddleware, async (ctx) => {
         createdAt: true,
         updatedAt: true,
       },
-    })
+    })) as unknown as UserSelect
 
     ctx.body = createResponse(200, '更新个人信息成功', {
       user: {
@@ -162,7 +180,9 @@ router.put('/api/profile', authMiddleware, async (ctx) => {
         username: updatedUser.username || '',
         name: updatedUser.name,
         email: updatedUser.email,
-        phone: updatedUser.telephone_number?.toString(),
+        telephone_number: updatedUser.telephone_number
+          ? updatedUser.telephone_number.toString()
+          : '',
         gender: updatedUser.gender,
         age: updatedUser.age,
         bio: updatedUser.bio,
