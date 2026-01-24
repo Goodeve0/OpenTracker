@@ -255,11 +255,32 @@ export const behaviorAPI = {
     endDate: string
   ): Promise<ApiResponse<BehaviorTrendData[]>> => {
     try {
-      // 暂时返回空数据，需要后端实现对应的接口
+      const response = await api.get('/api/stats', {
+        params: {
+          type: 'visitor_trends',
+        },
+      })
+
+      const data = response.data.data || {}
+
+      // 转换数据格式
+      const trends: BehaviorTrendData[] = []
+      if (data.dates && data.values && data.dates.length === data.values.length) {
+        for (let i = 0; i < data.dates.length; i++) {
+          trends.push({
+            date: data.dates[i],
+            pageViews: data.values[i],
+            uniqueVisitors: data.values[i], // 简化处理
+            avgDuration: 0, // 暂不支持
+            bounceRate: 0, // 暂不支持
+          })
+        }
+      }
+
       return {
         code: 200,
         message: 'success',
-        data: [],
+        data: trends,
       }
     } catch (error) {
       console.error('获取行为趋势数据失败:', error)
@@ -371,11 +392,28 @@ export const behaviorAPI = {
     filterParams: EventFilterParams = {}
   ): Promise<ApiResponse<DeviceDistributionData[]>> => {
     try {
-      // 暂时返回空数据，需要后端实现对应的接口
+      const response = await api.get('/api/stats', {
+        params: {
+          type: 'visitor_device',
+        },
+      })
+
+      const data = response.data.data || []
+
+      // 计算总设备数
+      const totalDevices = data.reduce((sum: number, item: any) => sum + item.count, 0)
+
+      // 转换数据格式
+      const distribution: DeviceDistributionData[] = data.map((item: any) => ({
+        type: item.name as DeviceType,
+        count: item.count,
+        percentage: totalDevices > 0 ? (item.count / totalDevices) * 100 : 0,
+      }))
+
       return {
         code: 200,
         message: 'success',
-        data: [],
+        data: distribution,
       }
     } catch (error) {
       console.error('获取设备分布失败:', error)
