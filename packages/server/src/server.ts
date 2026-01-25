@@ -5,6 +5,7 @@ import authRoutes from './routes/auth'
 import profileRoutes from './routes/profile'
 import trackRouter from './routes/track'
 import statsRoutes from './routes/stats'
+import projectRoutes from './routes/project'
 
 //创建koa实例
 const app = new Koa()
@@ -65,6 +66,9 @@ app.use(trackRouter.allowedMethods())
 
 app.use(statsRoutes.routes())
 app.use(statsRoutes.allowedMethods())
+
+app.use(projectRoutes.routes())
+app.use(projectRoutes.allowedMethods())
 
 //启动服务器
 const PORT = process.env.PORT || 3000

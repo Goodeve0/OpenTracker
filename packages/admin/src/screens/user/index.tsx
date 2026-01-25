@@ -19,6 +19,7 @@ import {
   Tag,
   Progress,
   Badge,
+  Modal,
 } from 'antd'
 import './index.css'
 import {
@@ -35,6 +36,7 @@ import {
   PauseCircleOutlined,
 } from '@ant-design/icons'
 import { authAPI, UpdateProfileRequest } from '@/api/auth'
+import { projectAPI, ProjectData as ApiProjectData } from '@/api/project'
 import { useUser } from '@/context/UserContext'
 
 const { Option } = Select
@@ -54,14 +56,19 @@ interface UserData {
 
 // 项目数据类型
 interface ProjectData {
-  id: string
+  id: number
   name: string
-  status: 'running' | 'stopped' | 'pending' | 'completed'
-  progress: number
-  created: string
-  updated: string
+  url: string
+  apiKey: string
+  status: 'running' | 'stopped' | 'pending'
+  createdAt: string
+  updatedAt: string
   type: string
   description: string
+  monitorStatus: 'enabled' | 'disabled'
+  userId: number
+  errorCount?: number
+  performanceScore?: number
 }
 
 const UserProfile: React.FC = () => {
@@ -83,53 +90,16 @@ const UserProfile: React.FC = () => {
   // 加载状态
   const [loading, setLoading] = useState(false)
 
-  // 模拟项目数据
-  const [projects] = useState<ProjectData[]>([
-    {
-      id: '1',
-      name: '个人网站开发',
-      status: 'running',
-      progress: 75,
-      created: '2023-09-15',
-      updated: '2023-10-20',
-      type: 'Web',
-      description: '使用React和Node.js开发的个人博客网站，包含文章发布、评论等功能',
-    },
-    {
-      id: '2',
-      name: '数据可视化仪表盘',
-      status: 'completed',
-      progress: 100,
-      created: '2023-08-20',
-      updated: '2023-09-30',
-      type: 'Data',
-      description: '基于ECharts的数据可视化项目，展示销售数据和用户行为分析',
-    },
-    {
-      id: '3',
-      name: '移动应用开发',
-      status: 'pending',
-      progress: 20,
-      created: '2023-10-01',
-      updated: '2023-10-18',
-      type: 'Mobile',
-      description: 'React Native跨平台移动应用，提供任务管理和日程提醒功能',
-    },
-    {
-      id: '4',
-      name: 'AI模型训练',
-      status: 'stopped',
-      progress: 50,
-      created: '2023-09-05',
-      updated: '2023-10-15',
-      type: 'AI',
-      description: '机器学习模型训练项目，用于图像识别和分类',
-    },
-  ])
+  // 项目数据状态
+  const [projects, setProjects] = useState<ProjectData[]>([])
+
+  // 控制添加项目模态框的状态
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false)
 
   // 表单实例
   const [userInfoForm] = Form.useForm()
   const [passwordForm] = Form.useForm()
+  const [addProjectForm] = Form.useForm()
 
   // 头像上传配置
   const uploadProps = {
@@ -172,9 +142,106 @@ const UserProfile: React.FC = () => {
     }
   }
 
-  // 组件挂载时获取个人资料
+  // 加载项目数据
+  const fetchProjects = async () => {
+    try {
+      const response = await projectAPI.getProjects()
+      if (response.code === 200 && response.data) {
+        // 转换API返回的数据格式
+        const formattedProjects: ProjectData[] = (response.data as any[]).map((project: any) => ({
+          ...project,
+          errorCount: 0, // 暂时设为0，后续可以从其他API获取
+          performanceScore: 100, // 暂时设为100，后续可以从其他API获取
+        }))
+        setProjects(formattedProjects)
+      } else {
+        message.error(response.message || '获取项目列表失败')
+      }
+    } catch (error) {
+      console.error('获取项目列表失败:', error)
+      message.error('获取项目列表失败，请稍后重试')
+    }
+  }
+
+  // 处理添加项目
+  const handleAddProject = async (values: any) => {
+    try {
+      const response = await projectAPI.createProject({
+        name: values.name,
+        url: values.url,
+        type: values.type,
+        apiKey: values.apiKey,
+        description: values.description,
+      })
+
+      if (response.code === 200 && response.data) {
+        const newProject: ProjectData = {
+          ...(response.data as any),
+          errorCount: 0,
+          performanceScore: 100,
+        }
+        setProjects([...projects, newProject])
+        setIsAddModalVisible(false)
+        addProjectForm.resetFields()
+        message.success('项目添加成功！')
+      } else {
+        message.error(response.message || '添加项目失败')
+      }
+    } catch (error) {
+      console.error('添加项目失败:', error)
+      message.error('添加项目失败，请稍后重试')
+    }
+  }
+
+  // 处理监控状态切换
+  const handleMonitorStatusChange = async (
+    projectId: number,
+    newStatus: 'enabled' | 'disabled'
+  ) => {
+    try {
+      const response = await projectAPI.updateMonitorStatus(projectId, newStatus)
+      if (response.code === 200 && response.data) {
+        setProjects(
+          projects.map((project) =>
+            project.id === projectId
+              ? {
+                  ...project,
+                  monitorStatus: newStatus,
+                  updatedAt: new Date().toISOString(),
+                }
+              : project
+          )
+        )
+        message.success(`项目监控已${newStatus === 'enabled' ? '开启' : '关闭'}`)
+      } else {
+        message.error(response.message || '更新监控状态失败')
+      }
+    } catch (error) {
+      console.error('更新监控状态失败:', error)
+      message.error('更新监控状态失败，请稍后重试')
+    }
+  }
+
+  // 处理删除项目
+  const handleDeleteProject = async (projectId: number) => {
+    try {
+      const response = await projectAPI.deleteProject(projectId)
+      if (response.code === 200) {
+        setProjects(projects.filter((project) => project.id !== projectId))
+        message.success('项目删除成功！')
+      } else {
+        message.error(response.message || '删除项目失败')
+      }
+    } catch (error) {
+      console.error('删除项目失败:', error)
+      message.error('删除项目失败，请稍后重试')
+    }
+  }
+
+  // 组件挂载时获取个人资料和项目数据
   useEffect(() => {
     fetchUserData()
+    fetchProjects()
   }, [])
 
   return (
@@ -448,17 +515,27 @@ const UserProfile: React.FC = () => {
                     <Row justify="space-between" align="middle">
                       <Col>
                         <h2>我的项目</h2>
-                        <p>管理和查看所有项目</p>
+                        <p>管理和监控所有项目</p>
                       </Col>
                       <Col>
-                        <Button type="primary" icon={<SettingOutlined />}>
+                        <Button
+                          type="primary"
+                          icon={<SettingOutlined />}
+                          onClick={() => setIsAddModalVisible(true)}
+                        >
                           新建项目
                         </Button>
                       </Col>
                     </Row>
                   </div>
 
-                  <Table dataSource={projects} rowKey="id" bordered pagination={{ pageSize: 10 }}>
+                  <Table
+                    dataSource={projects}
+                    rowKey="id"
+                    bordered
+                    pagination={{ pageSize: 10 }}
+                    scroll={{ x: 'max-content' }}
+                  >
                     <Table.Column
                       title="项目名称"
                       dataIndex="name"
@@ -468,6 +545,11 @@ const UserProfile: React.FC = () => {
                           <div style={{ fontWeight: 600 }}>{text}</div>
                           <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
                             {record.description}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
+                            <a href={record.url} target="_blank" rel="noopener noreferrer">
+                              {record.url}
+                            </a>
                           </div>
                         </div>
                       )}
@@ -481,7 +563,32 @@ const UserProfile: React.FC = () => {
                     />
 
                     <Table.Column
-                      title="状态"
+                      title="监控状态"
+                      dataIndex="monitorStatus"
+                      key="monitorStatus"
+                      render={(status, record) => (
+                        <div>
+                          <Tag color={status === 'enabled' ? 'green' : 'red'}>
+                            {status === 'enabled' ? '已开启' : '已关闭'}
+                          </Tag>
+                          <Button
+                            size="small"
+                            style={{ marginTop: '4px' }}
+                            onClick={() =>
+                              handleMonitorStatusChange(
+                                record.id,
+                                status === 'enabled' ? 'disabled' : 'enabled'
+                              )
+                            }
+                          >
+                            {status === 'enabled' ? '关闭监控' : '开启监控'}
+                          </Button>
+                        </div>
+                      )}
+                    />
+
+                    <Table.Column
+                      title="项目状态"
                       dataIndex="status"
                       key="status"
                       render={(status) => {
@@ -495,14 +602,9 @@ const UserProfile: React.FC = () => {
                             text = '运行中'
                             icon = (<PlayCircleOutlined />) as any
                             break
-                          case 'completed':
-                            color = 'green'
-                            text = '已完成'
-                            icon = (<Badge status="success" />) as any
-                            break
                           case 'pending':
                             color = 'orange'
-                            text = '进行中'
+                            text = '待处理'
                             icon = (<Progress percent={0} size="small" />) as any
                             break
                           case 'stopped':
@@ -524,21 +626,46 @@ const UserProfile: React.FC = () => {
                     />
 
                     <Table.Column
-                      title="进度"
-                      dataIndex="progress"
-                      key="progress"
-                      render={(progress) => (
-                        <Progress
-                          percent={progress}
-                          size="small"
-                          status={progress === 100 ? 'success' : 'active'}
-                        />
+                      title="监控数据"
+                      key="monitorData"
+                      render={(_, record) => (
+                        <div>
+                          <div style={{ fontSize: '12px', marginBottom: '4px' }}>
+                            错误数:{' '}
+                            <span style={{ color: record.errorCount ? 'red' : 'green' }}>
+                              {record.errorCount || 0}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px' }}>
+                            性能评分:{' '}
+                            <span
+                              style={{
+                                color: record.performanceScore
+                                  ? record.performanceScore > 80
+                                    ? 'green'
+                                    : 'orange'
+                                  : 'gray',
+                              }}
+                            >
+                              {record.performanceScore || '--'}
+                            </span>
+                          </div>
+                        </div>
                       )}
                     />
 
-                    <Table.Column title="创建时间" dataIndex="created" key="created" />
+                    <Table.Column
+                      title="API Key"
+                      dataIndex="apiKey"
+                      key="apiKey"
+                      render={(text) => (
+                        <div style={{ fontSize: '12px', fontFamily: 'monospace' }}>{text}</div>
+                      )}
+                    />
 
-                    <Table.Column title="更新时间" dataIndex="updated" key="updated" />
+                    <Table.Column title="创建时间" dataIndex="createdAt" key="createdAt" />
+
+                    <Table.Column title="更新时间" dataIndex="updatedAt" key="updatedAt" />
 
                     <Table.Column
                       title="操作"
@@ -546,18 +673,96 @@ const UserProfile: React.FC = () => {
                       render={(_, record) => (
                         <Space size="small">
                           <Button type="primary" size="small" icon={<EyeOutlined />}>
-                            查看
+                            查看监控
                           </Button>
-                          <Button size="small" icon={<SettingOutlined />}>
-                            编辑
-                          </Button>
-                          <Button danger size="small" icon={<DeleteOutlined />}>
+                          <Button
+                            danger
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => handleDeleteProject(record.id)}
+                          >
                             删除
                           </Button>
                         </Space>
                       )}
                     />
                   </Table>
+
+                  {/* 添加项目模态框 */}
+                  <Modal
+                    title="添加监控项目"
+                    open={isAddModalVisible}
+                    onCancel={() => setIsAddModalVisible(false)}
+                    footer={[
+                      <Button key="cancel" onClick={() => setIsAddModalVisible(false)}>
+                        取消
+                      </Button>,
+                      <Button key="submit" type="primary" onClick={() => addProjectForm.submit()}>
+                        保存
+                      </Button>,
+                    ]}
+                  >
+                    <Form form={addProjectForm} layout="vertical" onFinish={handleAddProject}>
+                      <Form.Item
+                        name="name"
+                        label="项目名称"
+                        rules={[{ required: true, message: '请输入项目名称' }]}
+                      >
+                        <Input placeholder="请输入项目名称" />
+                      </Form.Item>
+                      <Form.Item
+                        name="url"
+                        label="项目网址"
+                        rules={[
+                          { required: true, message: '请输入项目网址' },
+                          {
+                            validator: (_, value) => {
+                              if (!value) {
+                                return Promise.resolve()
+                              }
+                              // 简单的URL验证，允许localhost
+                              const urlRegex =
+                                /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/
+                              const localhostRegex =
+                                /^(https?:\/\/)?localhost(:\d+)?([/\w .-]*)*\/?$/
+                              if (urlRegex.test(value) || localhostRegex.test(value)) {
+                                return Promise.resolve()
+                              }
+                              return Promise.reject(new Error('请输入有效的网址'))
+                            },
+                          },
+                        ]}
+                      >
+                        <Input placeholder="请输入项目网址" />
+                      </Form.Item>
+                      <Form.Item
+                        name="type"
+                        label="项目类型"
+                        rules={[{ required: true, message: '请选择项目类型' }]}
+                      >
+                        <Select placeholder="请选择项目类型">
+                          <Option value="Web">Web应用</Option>
+                          <Option value="Mobile">移动应用</Option>
+                          <Option value="API">API服务</Option>
+                          <Option value="Other">其他</Option>
+                        </Select>
+                      </Form.Item>
+                      <Form.Item
+                        name="apiKey"
+                        label="API Key"
+                        rules={[{ required: false, message: '请输入API Key' }]}
+                      >
+                        <Input placeholder="留空将自动生成" />
+                      </Form.Item>
+                      <Form.Item
+                        name="description"
+                        label="项目描述"
+                        rules={[{ required: false, message: '请输入项目描述' }]}
+                      >
+                        <Input.TextArea rows={3} placeholder="请输入项目描述" />
+                      </Form.Item>
+                    </Form>
+                  </Modal>
                 </TabPane>
               </Tabs>
             </Card>
