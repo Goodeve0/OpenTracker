@@ -1,5 +1,7 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import * as echarts from 'echarts'
+import { Spin } from 'antd'
+import { queryStatsData } from '../../api/track'
 
 interface TopErrorsChartProps {
   title?: string
@@ -14,17 +16,62 @@ const TopErrorsChart: React.FC<TopErrorsChartProps> = ({
 }) => {
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
+  const [data, setData] = useState<any[]>([])
+  const [pages, setPages] = useState<string[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [localLoading, setLocalLoading] = useState(false)
 
+  // 从后端API获取高报错页面数据
+  useEffect(() => {
+    const fetchTopErrorsData = async () => {
+      setError(null)
+      setLocalLoading(true)
+      try {
+        const response = await queryStatsData({
+          type: 'high_error_pages',
+          limit: 5,
+        })
+
+        if (response.code === 200 && response.data) {
+          let errorData: any[] = []
+          let pageNames: string[] = []
+
+          if (response.data.pages && response.data.values) {
+            // 处理后端返回的pages和values格式
+            errorData = response.data.values
+            pageNames = response.data.pages
+          } else if (Array.isArray(response.data)) {
+            // 处理数组格式数据
+            errorData = response.data.map((item: any) => item.count)
+            pageNames = response.data.map((item: any) => item.page)
+          }
+
+          setData(errorData)
+          setPages(pageNames)
+        }
+      } catch (err) {
+        setError('获取高报错页面数据失败')
+        console.error('获取高报错页面数据失败:', err)
+        setData([]) // 确保数据为空，触发"暂无数据"显示
+        setPages([]) // 确保页面列表为空，触发"暂无数据"显示
+      } finally {
+        setLocalLoading(false)
+      }
+    }
+
+    fetchTopErrorsData()
+  }, [])
+
+  // 更新图表数据
   useEffect(() => {
     if (!chartRef.current) return
 
-    chartInstance.current = echarts.init(chartRef.current)
+    // 初始化图表实例
+    if (!chartInstance.current) {
+      chartInstance.current = echarts.init(chartRef.current)
+    }
 
-    // 模拟数据 - 与错误分析页面一致
-    const pages = ['/home', '/login', '/product/detail', '/cart', '/payment']
-    const data = [18203, 23489, 29034, 104970, 131744]
-
-    // 配置选项 - 柱状图
+    // 配置图表选项
     const option = {
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
       grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
@@ -62,7 +109,7 @@ const TopErrorsChart: React.FC<TopErrorsChartProps> = ({
       if (resizeTimeout) clearTimeout(resizeTimeout)
       chartInstance.current?.dispose()
     }
-  }, [])
+  }, [data, pages])
 
   useEffect(() => {
     if (chartInstance.current) {
@@ -74,7 +121,48 @@ const TopErrorsChart: React.FC<TopErrorsChartProps> = ({
     }
   }, [loading])
 
-  return <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
+  if (loading || localLoading) {
+    return (
+      <div
+        style={{
+          height: `${height}px`,
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Spin tip="加载中..." />
+      </div>
+    )
+  }
+
+  // 无论是否有错误，只要数据为空就显示"暂无数据"
+  const isEmptyData = !pages || pages.length === 0 || !data || data.length === 0
+
+  return (
+    <div style={{ height: `${height}px`, width: '100%', position: 'relative' }}>
+      {isEmptyData && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+            zIndex: 1,
+          }}
+        >
+          <div style={{ color: '#8c8c8c', fontSize: '14px' }}>暂无数据</div>
+        </div>
+      )}
+      <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
+    </div>
+  )
 }
 
 export default TopErrorsChart

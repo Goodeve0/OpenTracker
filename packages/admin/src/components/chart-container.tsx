@@ -285,11 +285,6 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
           bordered
           hoverable
         >
-          {config.description && (
-            <div style={{ marginBottom: '16px', color: '#666', fontSize: '12px' }}>
-              {config.description}
-            </div>
-          )}
           <Spin spinning={isLoading} tip="加载中...">
             {/* 添加key，当图表大小变化时强制重新渲染内部图表 */}
             <div key={`${config.id}-${config.size}`}>{children}</div>

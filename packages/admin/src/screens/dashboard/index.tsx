@@ -388,23 +388,23 @@ const DashboardPage: React.FC = () => {
     switch (config.type) {
       // 访客分析 - 访客趋势图（使用与访客分析页面相同的SVG图表）
       case ChartType.VISITOR_TRENDS:
-        return <VisitorChart height={config.size === 'large' ? 400 : 300} viewType="visitors" />
+        return <VisitorChart height={400} viewType="visitors" />
 
       // 访客分析 - 设备分布（暂时使用访客图表，后续可替换为设备分布图表）
       case ChartType.VISITOR_DEVICE:
-        return <VisitorChart height={config.size === 'large' ? 400 : 300} viewType="visitors" />
+        return <VisitorChart height={400} viewType="visitors" />
 
       // 错误分析 - 错误趋势（多折线图 - 与错误分析页面一致）
       case ChartType.ERROR_TRENDS:
-        return <ErrorTrendsChart height={config.size === 'large' ? 400 : 300} />
+        return <ErrorTrendsChart height={350} />
 
       // 错误分析 - 错误类型分布（饼图）
       case ChartType.ERROR_TYPE:
-        return <ErrorTypeChart height={config.size === 'large' ? 400 : 300} />
+        return <ErrorTypeChart height={300} />
 
       // 错误分析 - 高频报错页面（柱状图 - 与错误分析页面一致）
       case ChartType.HIGH_ERROR_PAGES:
-        return <TopErrorsChart height={config.size === 'large' ? 400 : 300} />
+        return <TopErrorsChart height={300} />
 
       // 行为分析 - 事件分析（暂时使用占位符）
       case ChartType.BEHAVIOR_EVENTS:
@@ -448,23 +448,23 @@ const DashboardPage: React.FC = () => {
 
       // 获客分析 - 用户增长（多折线图）
       case ChartType.CUSTOMER_GROWTH:
-        return <CustomerGrowthChart height={config.size === 'large' ? 400 : 300} />
+        return <CustomerGrowthChart height={400} />
 
       // 获客分析 - 来源分析（饼图）
       case ChartType.CUSTOMER_SOURCE:
-        return <CustomerSourceChart height={config.size === 'large' ? 400 : 300} />
+        return <CustomerSourceChart height={400} />
 
       // 性能分析 - 性能概览（饼图）
       case ChartType.PERFORMANCE_OVERVIEW:
-        return <PerformanceOverviewChart height={config.size === 'large' ? 400 : 300} />
+        return <PerformanceOverviewChart height={400} />
 
       // 性能分析 - 性能趋势（折线图）
       case ChartType.PERFORMANCE_TRENDS:
-        return <PerformanceTrendsChart height={config.size === 'large' ? 400 : 300} />
+        return <PerformanceTrendsChart height={400} />
 
       // 白屏监控 - 白屏趋势（多折线图）
       case ChartType.WHITE_SCREEN_TRENDS:
-        return <WhiteScreenTrendsChart height={config.size === 'large' ? 400 : 300} />
+        return <WhiteScreenTrendsChart height={400} />
 
       default:
         // 对于其他类型，显示带有详细信息的占位符

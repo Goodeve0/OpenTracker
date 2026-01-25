@@ -1,5 +1,7 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import * as echarts from 'echarts'
+import { Spin } from 'antd'
+import { queryStatsData } from '../../api/track'
 
 interface ErrorTypeChartProps {
   title?: string
@@ -14,23 +16,51 @@ const ErrorTypeChart: React.FC<ErrorTypeChartProps> = ({
 }) => {
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
+  const [data, setData] = useState<any[]>([])
+  const [localLoading, setLocalLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
+  // 从后端API获取错误类型分布数据
+  useEffect(() => {
+    const fetchErrorTypeData = async () => {
+      setError(null)
+      setLocalLoading(true)
+      try {
+        const response = await queryStatsData({
+          type: 'error_type_distribution',
+        })
+
+        if (response.code === 200 && response.data) {
+          if (Array.isArray(response.data)) {
+            setData(response.data)
+          } else {
+            setData([])
+          }
+        } else {
+          setData([])
+        }
+      } catch (err) {
+        setError('获取错误类型分布数据失败')
+        console.error('获取错误类型分布数据失败:', err)
+        setData([]) // 确保数据为空，触发"暂无数据"显示
+      } finally {
+        setLocalLoading(false)
+      }
+    }
+
+    fetchErrorTypeData()
+  }, [])
+
+  // 更新图表数据
   useEffect(() => {
     if (!chartRef.current) return
 
-    // 初始化图表
-    chartInstance.current = echarts.init(chartRef.current)
+    // 初始化图表实例
+    if (!chartInstance.current) {
+      chartInstance.current = echarts.init(chartRef.current)
+    }
 
-    // 模拟数据（实际应从API获取）
-    const data = [
-      { value: 1048, name: 'JS错误' },
-      { name: 'API错误', value: 735 },
-      { name: '资源错误', value: 580 },
-      { name: '框架错误', value: 484 },
-      { name: '页面崩溃', value: 300 },
-    ]
-
-    // 配置选项 - 饼图
+    // 配置图表选项
     const option = {
       tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
       legend: { orient: 'vertical', left: 'left' },
@@ -52,7 +82,6 @@ const ErrorTypeChart: React.FC<ErrorTypeChartProps> = ({
       ],
     }
 
-    // 设置图表选项
     chartInstance.current.setOption(option)
 
     // 添加延迟resize，确保容器大小已确定
@@ -73,7 +102,7 @@ const ErrorTypeChart: React.FC<ErrorTypeChartProps> = ({
       if (resizeTimeout) clearTimeout(resizeTimeout)
       chartInstance.current?.dispose()
     }
-  }, [])
+  }, [data])
 
   // 处理加载状态
   useEffect(() => {
@@ -86,7 +115,48 @@ const ErrorTypeChart: React.FC<ErrorTypeChartProps> = ({
     }
   }, [loading])
 
-  return <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
+  if (loading || localLoading) {
+    return (
+      <div
+        style={{
+          height: `${height}px`,
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Spin tip="加载中..." />
+      </div>
+    )
+  }
+
+  // 无论是否有错误，只要数据为空就显示"暂无数据"
+  const isEmptyData = !data || data.length === 0
+
+  return (
+    <div style={{ height: `${height}px`, width: '100%', position: 'relative' }}>
+      {isEmptyData && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+            zIndex: 1,
+          }}
+        >
+          <div style={{ color: '#8c8c8c', fontSize: '14px' }}>暂无数据</div>
+        </div>
+      )}
+      <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
+    </div>
+  )
 }
 
 export default ErrorTypeChart

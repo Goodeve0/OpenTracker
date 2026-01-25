@@ -131,21 +131,8 @@ const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
     if (typeof coreVitals.inp === 'number') coreVals.push(coreVitals.inp)
     // 避免cls值范围问题，暂时不添加cls到饼图数据
 
-    // 添加更多模拟数据点，让饼图显示更完整的分布
-    const additionalMetrics = [
-      800, // 良好
-      2800, // 需改善
-      4500, // 较差
-      1500, // 良好
-      3200, // 需改善
-      5000, // 较差
-      900, // 良好
-      3600, // 需改善
-      4200, // 较差
-      1100, // 良好
-    ]
-
-    const allVals = [...coreVals, ...additionalMetrics]
+    // 只使用从API获取的真实数据，不添加模拟数据
+    const allVals = coreVals
 
     // Pie: use LCP thresholds (example: good <=2500ms, mid<=4000) - 与原页面完全相同
     // 原页面的奇怪转换，我们也保留
@@ -179,8 +166,29 @@ const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
     }
   }, [loading])
 
+  // 无论是否有错误，只要数据为空就显示"暂无数据"
+  const isEmptyData = !coreVitals.lcp && !coreVitals.inp
+
   return (
-    <div>
+    <div style={{ height: `${height}px`, width: '100%', position: 'relative' }}>
+      {isEmptyData && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+            zIndex: 1,
+          }}
+        >
+          <div style={{ color: '#8c8c8c', fontSize: '14px' }}>暂无数据</div>
+        </div>
+      )}
       <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
     </div>
   )
