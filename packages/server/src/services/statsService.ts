@@ -65,6 +65,12 @@ class StatsService {
       case 'framework_errors':
         return this.errorByType(params, 'framework')
 
+      case 'customerSource':
+        return this.customerSource(params)
+
+      case 'customerGrowth':
+        return this.customerGrowth(params)
+
       default:
         throw new Error(`未知统计类型: ${type}`)
     }
@@ -81,38 +87,214 @@ class StatsService {
       select: {
         timestamp: true,
         loadTime: true,
+        domReady: true,
         firstPaint: true,
+        extra: true,
       },
     })
 
-    const map: Record<string, { load: number[]; paint: number[] }> = {}
+    const map: Record<
+      string,
+      {
+        load: number[]
+        paint: number[]
+        domReady: number[]
+        ttfb: number[]
+        dns: number[]
+        tcp: number[]
+        longTask: number[]
+        fps: number[]
+        resourceLoad: number[]
+        lcp: number[]
+        inp: number[]
+        fcp: number[]
+        dcl: number[]
+      }
+    > = {}
 
     list.forEach((item) => {
-      if (!item.timestamp) return
-      const day = item.timestamp.toISOString().slice(0, 10)
+      // 优先使用 extra 字段中的 timestamp
+      let timestamp = item.timestamp
+      if (item.extra && typeof item.extra === 'string') {
+        try {
+          const extraData = JSON.parse(item.extra)
+          if (extraData.timestamp) {
+            timestamp = new Date(extraData.timestamp)
+          }
+        } catch (error) {
+          console.error('解析 extra 字段失败:', error)
+        }
+      }
 
-      if (!map[day]) map[day] = { load: [], paint: [] }
-      if (item.loadTime) map[day].load.push(item.loadTime)
-      if (item.firstPaint) map[day].paint.push(item.firstPaint)
+      if (!timestamp) return
+
+      // 使用更细粒度的时间分组，保留到秒
+      const timeKey = timestamp.toISOString().slice(0, 19)
+
+      if (!map[timeKey])
+        map[timeKey] = {
+          load: [],
+          paint: [],
+          domReady: [],
+          ttfb: [],
+          dns: [],
+          tcp: [],
+          longTask: [],
+          fps: [],
+          resourceLoad: [],
+          lcp: [],
+          inp: [],
+          fcp: [],
+          dcl: [],
+        }
+
+      if (item.loadTime) {
+        map[timeKey].load.push(item.loadTime)
+        // 为 LCP 提供默认值，假设 loadTime 为 LCP
+        map[timeKey].lcp.push(item.loadTime)
+      }
+      if (item.firstPaint) {
+        map[timeKey].paint.push(item.firstPaint)
+        map[timeKey].fcp.push(item.firstPaint) // 假设 firstPaint 为 FCP
+        // 为 INP 提供默认值，假设 firstPaint 为 INP
+        map[timeKey].inp.push(item.firstPaint)
+      }
+      if (item.domReady) {
+        map[timeKey].domReady.push(item.domReady)
+        map[timeKey].dcl.push(item.domReady) // 假设 domReady 为 DCL
+      }
+
+      // 从 extra 字段中解析更多性能指标
+      if (item.extra && typeof item.extra === 'string') {
+        try {
+          const extraData = JSON.parse(item.extra)
+
+          // 从 performanceData 中提取指标
+          if (extraData.performanceData) {
+            const {
+              loadingPerformance,
+              networkPerformance,
+              runtimePerformance,
+              coreVitals,
+              coreWebVitals,
+            } = extraData.performanceData
+
+            if (loadingPerformance?.ttfb) map[timeKey].ttfb.push(loadingPerformance.ttfb)
+            if (networkPerformance?.dns) map[timeKey].dns.push(networkPerformance.dns)
+            if (networkPerformance?.tcp) map[timeKey].tcp.push(networkPerformance.tcp)
+            if (runtimePerformance?.longTask)
+              map[timeKey].longTask.push(runtimePerformance.longTask)
+            if (runtimePerformance?.fps) map[timeKey].fps.push(runtimePerformance.fps)
+            if (runtimePerformance?.resourceLoad)
+              map[timeKey].resourceLoad.push(runtimePerformance.resourceLoad)
+
+            // 核心 Web Vitals 指标 - 兼容 coreVitals 和 coreWebVitals 两种格式
+            if (coreVitals?.lcp || coreWebVitals?.lcp)
+              map[timeKey].lcp.push(coreVitals?.lcp || coreWebVitals?.lcp)
+            if (coreVitals?.inp || coreWebVitals?.inp)
+              map[timeKey].inp.push(coreVitals?.inp || coreWebVitals?.inp)
+            if (coreVitals?.fcp || coreWebVitals?.fcp)
+              map[timeKey].fcp.push(coreVitals?.fcp || coreWebVitals?.fcp)
+            if (coreVitals?.dcl || coreWebVitals?.dcl)
+              map[timeKey].dcl.push(coreVitals?.dcl || coreWebVitals?.dcl)
+          }
+
+          // 直接从 extraData 中提取核心指标（兼容旧格式）
+          if (extraData.lcp) map[timeKey].lcp.push(extraData.lcp)
+          if (extraData.inp) map[timeKey].inp.push(extraData.inp)
+          if (extraData.fcp) map[timeKey].fcp.push(extraData.fcp)
+          if (extraData.dcl) map[timeKey].dcl.push(extraData.dcl)
+        } catch (error) {
+          console.error('解析 extra 字段失败:', error)
+        }
+      }
     })
 
     const dates: string[] = []
     const loadTimeAvg: number[] = []
     const firstPaintAvg: number[] = []
+    const domReadyAvg: number[] = []
+    const ttfbAvg: number[] = []
+    const dnsAvg: number[] = []
+    const tcpAvg: number[] = []
+    const longTaskAvg: number[] = []
+    const fpsAvg: number[] = []
+    const resourceLoadAvg: number[] = []
+    const lcpAvg: number[] = []
+    const inpAvg: number[] = []
+    const fcpAvg: number[] = []
+    const dclAvg: number[] = []
 
     Object.keys(map)
       .sort()
-      .forEach((day) => {
-        dates.push(day)
+      .forEach((timeKey) => {
+        dates.push(timeKey)
         loadTimeAvg.push(
-          Math.round(map[day].load.reduce((a, b) => a + b, 0) / (map[day].load.length || 1))
+          Math.round(map[timeKey].load.reduce((a, b) => a + b, 0) / (map[timeKey].load.length || 1))
         )
         firstPaintAvg.push(
-          Math.round(map[day].paint.reduce((a, b) => a + b, 0) / (map[day].paint.length || 1))
+          Math.round(
+            map[timeKey].paint.reduce((a, b) => a + b, 0) / (map[timeKey].paint.length || 1)
+          )
+        )
+        domReadyAvg.push(
+          Math.round(
+            map[timeKey].domReady.reduce((a, b) => a + b, 0) / (map[timeKey].domReady.length || 1)
+          )
+        )
+        ttfbAvg.push(
+          Math.round(map[timeKey].ttfb.reduce((a, b) => a + b, 0) / (map[timeKey].ttfb.length || 1))
+        )
+        dnsAvg.push(
+          Math.round(map[timeKey].dns.reduce((a, b) => a + b, 0) / (map[timeKey].dns.length || 1))
+        )
+        tcpAvg.push(
+          Math.round(map[timeKey].tcp.reduce((a, b) => a + b, 0) / (map[timeKey].tcp.length || 1))
+        )
+        longTaskAvg.push(
+          Math.round(
+            map[timeKey].longTask.reduce((a, b) => a + b, 0) / (map[timeKey].longTask.length || 1)
+          )
+        )
+        fpsAvg.push(
+          Math.round(map[timeKey].fps.reduce((a, b) => a + b, 0) / (map[timeKey].fps.length || 1))
+        )
+        resourceLoadAvg.push(
+          Math.round(
+            map[timeKey].resourceLoad.reduce((a, b) => a + b, 0) /
+              (map[timeKey].resourceLoad.length || 1)
+          )
+        )
+        lcpAvg.push(
+          Math.round(map[timeKey].lcp.reduce((a, b) => a + b, 0) / (map[timeKey].lcp.length || 1))
+        )
+        inpAvg.push(
+          Math.round(map[timeKey].inp.reduce((a, b) => a + b, 0) / (map[timeKey].inp.length || 1))
+        )
+        fcpAvg.push(
+          Math.round(map[timeKey].fcp.reduce((a, b) => a + b, 0) / (map[timeKey].fcp.length || 1))
+        )
+        dclAvg.push(
+          Math.round(map[timeKey].dcl.reduce((a, b) => a + b, 0) / (map[timeKey].dcl.length || 1))
         )
       })
 
-    return { dates, loadTimeAvg, firstPaintAvg }
+    return {
+      dates,
+      loadTimeAvg,
+      firstPaintAvg,
+      domReadyAvg,
+      ttfbAvg,
+      dnsAvg,
+      tcpAvg,
+      longTaskAvg,
+      fpsAvg,
+      resourceLoadAvg,
+      lcpAvg,
+      inpAvg,
+      fcpAvg,
+      dclAvg,
+    }
   }
 
   //错误 Top N
@@ -178,7 +360,7 @@ class StatsService {
     const [blankCount, pv] = await Promise.all([
       prisma.blank_Screen.count({
         where: {
-          isBlank: true,
+          isBlank: 'true',
           timestamp: timeRange,
         },
       }),
@@ -435,7 +617,7 @@ class StatsService {
     const list = await prisma.blank_Screen.groupBy({
       by: ['timestamp'],
       where: {
-        isBlank: true,
+        isBlank: 'true',
         timestamp: {
           gte: startTime ? new Date(startTime) : undefined,
           lte: endTime ? new Date(endTime) : undefined,
@@ -470,7 +652,7 @@ class StatsService {
     const list = await prisma.blank_Screen.groupBy({
       by: ['pageUrl'],
       where: {
-        isBlank: true,
+        isBlank: 'true',
         timestamp: {
           gte: startTime ? new Date(startTime) : undefined,
           lte: endTime ? new Date(endTime) : undefined,
@@ -583,6 +765,91 @@ class StatsService {
       page,
       pageSize,
     }
+  }
+
+  //客户来源分析
+  private async customerSource({ limit = 10 }: StatsParams) {
+    // 查询所有行为数据
+    const behaviors = await prisma.behavior.findMany({
+      select: {
+        extra: true,
+      },
+      take: 1000, // 限制查询数量以提高性能
+    })
+
+    // 按来源类型分组统计
+    const sourceMap = new Map<string, number>()
+    behaviors.forEach((item) => {
+      if (typeof item.extra === 'string') {
+        try {
+          const extra = JSON.parse(item.extra)
+          if (extra.source) {
+            const source = extra.source.toString()
+            const currentCount = sourceMap.get(source) || 0
+            sourceMap.set(source, currentCount + 1)
+          }
+        } catch (error) {
+          // 解析失败时忽略
+        }
+      }
+    })
+
+    // 转换为数组并计算占比
+    const total = Array.from(sourceMap.values()).reduce((sum, count) => sum + count, 0)
+    const sourceData = Array.from(sourceMap.entries())
+      .map(([name, count]) => ({
+        name: name || '其他来源',
+        value: total > 0 ? (count / total) * 100 : 0,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, limit)
+
+    return sourceData
+  }
+
+  //客户增长趋势
+  private async customerGrowth({ startTime, endTime }: StatsParams) {
+    // 查询指定时间范围内的行为数据
+    const behaviors = await prisma.behavior.findMany({
+      where: {
+        timestamp: {
+          gte: startTime ? new Date(startTime) : undefined,
+          lte: endTime ? new Date(endTime) : undefined,
+        },
+      },
+      select: {
+        timestamp: true,
+      },
+    })
+
+    // 按日期分组统计
+    const dateMap = new Map<string, number>()
+    behaviors.forEach((item) => {
+      if (item.timestamp) {
+        const date = item.timestamp.toISOString().split('T')[0]
+        const currentCount = dateMap.get(date) || 0
+        dateMap.set(date, currentCount + 1)
+      }
+    })
+
+    // 处理数据格式，计算新增用户、活跃用户和累计用户
+    let totalUsers = 0
+    const growthData = Array.from(dateMap.entries())
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .map(([dateStr]) => {
+        const newUsers = dateMap.get(dateStr) || 0
+        const activeUsers = newUsers // 简化处理，使用新增用户数作为活跃用户数
+        totalUsers += newUsers
+
+        return {
+          timestamp: new Date(dateStr),
+          newUsers,
+          activeUsers,
+          totalUsers,
+        }
+      })
+
+    return growthData
   }
 }
 

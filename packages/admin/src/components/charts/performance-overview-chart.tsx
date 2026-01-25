@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Spin, Empty } from 'antd'
+import { Spin } from 'antd'
 import * as echarts from 'echarts'
+import { queryStatsData } from '../../api/track'
 
 interface PerformanceOverviewChartProps {
   title?: string
@@ -11,7 +12,7 @@ interface PerformanceOverviewChartProps {
 const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
   title = '性能分布',
   height = 300,
-  loading = false,
+  loading: propLoading = false,
 }) => {
   const chartRef = React.useRef<HTMLDivElement>(null)
   const chartInstance = React.useRef<echarts.ECharts | null>(null)
@@ -23,6 +24,9 @@ const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
     inp: null as number | null,
     cls: null as number | null,
   })
+
+  // 本地加载状态
+  const [loading, setLoading] = useState(false)
 
   // Helper: compute distribution categories for a numeric array
   // 与原性能页面相同的分布计算逻辑
@@ -43,10 +47,41 @@ const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
     ]
   }
 
-  // 禁用从性能收集器获取真实数据，只使用静态mock数据
-  const pullPerformanceData = () => {
-    // 什么都不做，直接返回
-    return
+  // 从后端API获取性能数据
+  const pullPerformanceData = async () => {
+    try {
+      setLoading(true)
+      // 获取性能均值数据
+      const response = await queryStatsData({ type: 'performance_avg' })
+      if (response.code === 200 && response.data) {
+        // 计算平均值作为核心指标
+        const { loadTimeAvg, firstPaintAvg } = response.data
+        if (loadTimeAvg.length > 0 || firstPaintAvg.length > 0) {
+          setCoreVitals({
+            lcp: loadTimeAvg[loadTimeAvg.length - 1] || null, // 使用最新的加载时间作为LCP
+            inp: firstPaintAvg[firstPaintAvg.length - 1] || null, // 使用最新的首次绘制时间作为INP
+            cls: 0.1, // 暂时使用默认值，后续可从API获取
+          })
+        } else {
+          // 如果没有数据，保持空值
+          setCoreVitals({
+            lcp: null, // 最大内容绘制时间（毫秒）
+            inp: null, // 交互到下次绘制时间（毫秒）
+            cls: null, // 累积布局偏移
+          })
+        }
+      }
+    } catch (error) {
+      console.error('获取性能数据失败:', error)
+      // 错误时保持空值
+      setCoreVitals({
+        lcp: null, // 最大内容绘制时间（毫秒）
+        inp: null, // 交互到下次绘制时间（毫秒）
+        cls: null, // 累积布局偏移
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   // 初始化图表
@@ -55,12 +90,11 @@ const PerformanceOverviewChart: React.FC<PerformanceOverviewChartProps> = ({
 
     chartInstance.current = echarts.init(chartRef.current)
 
-    // 使用静态的mock数据，不再自动刷新
-    setCoreVitals({
-      lcp: 1200, // 最大内容绘制时间（毫秒）
-      inp: 300, // 交互到下次绘制时间（毫秒）
-      cls: 0.1, // 累积布局偏移
-    })
+    // 初始加载数据
+    pullPerformanceData()
+
+    // 设置定时刷新
+    intervalRef.current = window.setInterval(pullPerformanceData, 60000) // 每分钟刷新一次
 
     const handleResize = () => {
       chartInstance.current?.resize()

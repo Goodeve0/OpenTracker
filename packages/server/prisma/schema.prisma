@@ -92,4 +92,27 @@ model Users {
   age              Int?
   bio              String?
   avatar           String?   @db.VarChar(254)
+  
+  // 关联项目
+  projects         Project[]
+}
+
+model Project {
+  id             Int       @id @default(autoincrement())
+  name           String    @db.VarChar(254)
+  url            String    @db.VarChar(254)
+  apiKey         String    @db.VarChar(254) @unique
+  type           String    @db.VarChar(254)
+  description    String?
+  status         String    @db.VarChar(254) @default("pending")
+  monitorStatus  String    @db.VarChar(254) @default("enabled")
+  userId         Int
+  createdAt      DateTime  @db.Date @default(now())
+  updatedAt      DateTime  @db.Date @default(now())
+  
+  // 关联用户
+  user           Users     @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "idx_project_user")
+  @@index([apiKey], map: "idx_project_api_key")
 }

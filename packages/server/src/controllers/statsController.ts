@@ -3,7 +3,7 @@ import statsService from '../services/statsService'
 
 class StatsController {
   async getStats(ctx: Context) {
-    const { type, startTime, endTime } = ctx.request.query
+    const { type, startTime, endTime, limit } = ctx.request.query
 
     if (!type) {
       ctx.status = 400
@@ -36,11 +36,23 @@ class StatsController {
       return
     }
 
+    // 验证limit是否为有效数字
+    if (limit && isNaN(Number(limit))) {
+      ctx.status = 400
+      ctx.body = {
+        code: 400,
+        message: 'limit必须为有效数字',
+        timestamp: new Date().toISOString(),
+      }
+      return
+    }
+
     try {
       const data = await statsService.getStats({
         type: type as string,
         startTime: startTime ? Number(startTime) : undefined,
         endTime: endTime ? Number(endTime) : undefined,
+        limit: limit ? Number(limit) : undefined,
       })
 
       ctx.body = {
