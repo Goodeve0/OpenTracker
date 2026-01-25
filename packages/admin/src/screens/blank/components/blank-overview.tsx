@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import ReactEcharts from 'echarts-for-react'
 import {
   Card,
@@ -14,11 +14,14 @@ import {
   DatePicker,
   Row,
   Col,
+  message,
 } from 'antd'
 import { RedoOutlined } from '@ant-design/icons'
 import BlankDetail from './blank-details'
 import ChartWithAdd from '../../../components/chart-with-add'
 import { ChartType } from '../../../types'
+import { queryBlankData, queryStatsData } from '../../../api/track'
+import dayjs from 'dayjs'
 
 const { Title } = Typography
 const { Content } = Layout
@@ -33,6 +36,14 @@ interface BlankListItem {
   option: string
 }
 
+interface WhiteScreenTrendData {
+  date: string
+  whiteScreenCount: number
+  affectedUserCount: number
+  whiteScreenRate: number
+  affectedUserRate: number
+}
+
 const statusOptions = [
   { label: '全部', value: 'all' },
   { label: 'NEW', value: 'NEW' },
@@ -41,189 +52,11 @@ const statusOptions = [
   { label: 'CLOSED', value: 'CLOSED' },
 ]
 
-const listData: BlankListItem[] = [
-  {
-    key: '1',
-    page: '/admin/1',
-    blankCounts: 16,
-    users: 1,
-    time: '2024-12-17 18:02:14',
-    state: 'NEW',
-    option: '操作',
-  },
-  {
-    key: '2',
-    page: '/admin/2',
-    blankCounts: 10,
-    users: 1,
-    time: '2024-12-19 10:20:57',
-    state: 'NEW',
-    option: '操作',
-  },
-  {
-    key: '3',
-    page: '/admin/3',
-    blankCounts: 9,
-    users: 1,
-    time: '2024-12-19 11:08:29',
-    state: 'NEW',
-    option: '操作',
-  },
-  {
-    key: '4',
-    page: '/admin/4',
-    blankCounts: 8,
-    users: 1,
-    time: '2024-12-20 10:28:56',
-    state: 'NEW',
-    option: '操作',
-  },
-  {
-    key: '5',
-    page: '/admin/5',
-    blankCounts: 8,
-    users: 1,
-    time: '2024-12-20 11:18:53',
-    state: 'NEW',
-    option: '操作',
-  },
-  {
-    key: '6',
-    page: '/admin/6',
-    blankCounts: 4,
-    users: 1,
-    time: '2024-12-18 18:18:54',
-    state: 'NEW',
-    option: '操作',
-  },
-  {
-    key: '7',
-    page: '/admin/7',
-    blankCounts: 2,
-    users: 1,
-    time: '2024-12-17 11:12:19',
-    state: 'NEW',
-    option: '操作',
-  },
-]
-
-const xData = [
-  '2025/12/14',
-  '2025/12/15',
-  '2025/12/16',
-  '2025/12/17',
-  '2025/12/18',
-  '2025/12/19',
-  '2025/12/20',
-]
-
-// 静态数据
-const whiteScreenCount = [0, 5, 12, 16, 4, 10, 18]
-const affectedUserCount = [0, 1, 3, 2, 1, 2, 3]
-const whiteScreenRate = [0, 0.2, 0.45, 0.67, 0.25, 0.6, 1.2]
-const affectedUserRate = [0, 1.1, 0.9, 0.52, 0.3, 0.7, 1.15]
-
 const convertDecimalToPercent = (decimal: number) => {
   if (typeof decimal !== 'number' || isNaN(decimal)) {
     return '0.00%'
   }
   return (decimal * 100).toFixed(2) + '%'
-}
-
-const getChartOption = () => {
-  return {
-    tooltip: {
-      trigger: 'axis',
-      valueFormatter: (value: number, series: any): string | number => {
-        const seriesName: string = String(series?.name || '')
-        if (seriesName.includes('率')) {
-          return convertDecimalToPercent(value)
-        }
-        return typeof value === 'number' && !isNaN(value) ? value : 0
-      },
-    },
-    legend: {
-      data: ['白屏数', '影响用户数', '白屏率', '影响用户率'],
-      bottom: 10,
-    },
-    grid: {
-      left: '4%',
-      right: '6%',
-      bottom: 60,
-      top: 40,
-      containLabel: true,
-    },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: xData,
-    },
-    yAxis: [
-      {
-        type: 'value',
-        name: '',
-        position: 'left',
-      },
-      {
-        type: 'value',
-        name: '',
-        position: 'right',
-        axisLabel: {
-          formatter: '{value} %',
-        },
-      },
-    ],
-    series: [
-      {
-        name: '白屏数',
-        type: 'line',
-        smooth: true,
-        yAxisIndex: 0,
-        symbol: 'circle',
-        symbolSize: 6,
-        itemStyle: {
-          color: '#2d8cf0',
-        },
-        data: whiteScreenCount,
-      },
-      {
-        name: '影响用户数',
-        type: 'line',
-        smooth: true,
-        yAxisIndex: 0,
-        symbol: 'circle',
-        symbolSize: 6,
-        itemStyle: {
-          color: '#7c4dff',
-        },
-        data: affectedUserCount,
-      },
-      {
-        name: '白屏率',
-        type: 'line',
-        smooth: true,
-        yAxisIndex: 1,
-        symbol: 'circle',
-        symbolSize: 6,
-        itemStyle: {
-          color: '#00b894',
-        },
-        data: whiteScreenRate,
-      },
-      {
-        name: '影响用户率',
-        type: 'line',
-        smooth: true,
-        yAxisIndex: 1,
-        symbol: 'circle',
-        symbolSize: 6,
-        itemStyle: {
-          color: '#ff7675',
-        },
-        data: affectedUserRate,
-      },
-    ],
-  }
 }
 
 const handleChange = (value: string) => {
@@ -232,9 +65,199 @@ const handleChange = (value: string) => {
 
 const BlankOverview: React.FC = () => {
   const [isShowDetail, setIsShowDetail] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [blankList, setBlankList] = useState<BlankListItem[]>([])
+  const [trendData, setTrendData] = useState<WhiteScreenTrendData[]>([])
+  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
+    dayjs('2025-12-14'),
+    dayjs('2025-12-20'),
+  ])
 
   const showDetail = () => {
     setIsShowDetail(true)
+  }
+
+  const fetchWhiteScreenData = async () => {
+    setLoading(true)
+    try {
+      // 获取白屏趋势数据
+      const statsResponse = await queryStatsData({
+        type: 'white_screen_trends',
+        startTime: dateRange[0].startOf('day').valueOf(),
+        endTime: dateRange[1].endOf('day').valueOf(),
+        limit: 7,
+      })
+
+      if (statsResponse.code === 200 && statsResponse.data) {
+        // 处理后端返回的数据格式
+        if (statsResponse.data.dates && statsResponse.data.values) {
+          const trends = statsResponse.data.dates.map((date: string, index: number) => ({
+            date: dayjs(date).format('YYYY/MM/DD'),
+            whiteScreenCount: statsResponse.data.values[index] || 0,
+            affectedUserCount: Math.ceil(statsResponse.data.values[index] * 0.3) || 0, // 模拟用户数
+            whiteScreenRate: (statsResponse.data.values[index] / 100).toFixed(2) || 0, // 模拟白屏率
+            affectedUserRate: (statsResponse.data.values[index] / 200).toFixed(2) || 0, // 模拟影响用户率
+          }))
+          setTrendData(trends)
+        } else {
+          // 兼容其他数据格式
+          const trends = statsResponse.data.map((item: any) => ({
+            date: dayjs(item.timestamp || item.date).format('YYYY/MM/DD'),
+            whiteScreenCount: item.blankCount || item.value || 0,
+            affectedUserCount:
+              item.userCount || Math.ceil((item.blankCount || item.value || 0) * 0.3) || 0,
+            whiteScreenRate: item.blankRate || (item.blankCount || item.value || 0) / 100 || 0,
+            affectedUserRate: item.userRate || (item.blankCount || item.value || 0) / 200 || 0,
+          }))
+          setTrendData(trends)
+        }
+      }
+
+      // 获取白屏列表数据
+      const listResponse = await queryBlankData({
+        startTime: dateRange[0].startOf('day').valueOf(),
+        endTime: dateRange[1].endOf('day').valueOf(),
+        page: 1,
+        pageSize: 20,
+      })
+
+      if (listResponse.code === 200 && listResponse.data?.list) {
+        const list = listResponse.data.list.map((item: any, index: number) => ({
+          key: (index + 1).toString(),
+          page: item.pageUrl || '',
+          blankCounts: 1, // 每条记录代表一次白屏
+          users: 1,
+          time: dayjs(item.timestamp).format('YYYY-MM-DD HH:mm:ss'),
+          state: 'NEW' as const,
+          option: '操作',
+        }))
+        setBlankList(list)
+      }
+    } catch (error) {
+      console.error('获取白屏数据失败:', error)
+      message.error('获取白屏数据失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchWhiteScreenData()
+  }, [dateRange])
+
+  const handleDateChange = (
+    dates: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null,
+    dateStrings: [string, string]
+  ) => {
+    if (dates && dates[0] && dates[1]) {
+      setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])
+    }
+  }
+
+  const handleRefresh = () => {
+    fetchWhiteScreenData()
+  }
+
+  const getChartOption = () => {
+    const xData = trendData.map((item) => item.date)
+    const whiteScreenCount = trendData.map((item) => item.whiteScreenCount)
+    const affectedUserCount = trendData.map((item) => item.affectedUserCount)
+    const whiteScreenRate = trendData.map((item) => item.whiteScreenRate)
+    const affectedUserRate = trendData.map((item) => item.affectedUserRate)
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        valueFormatter: (value: number, series: any): string | number => {
+          const seriesName: string = String(series?.name || '')
+          if (seriesName.includes('率')) {
+            return convertDecimalToPercent(value)
+          }
+          return typeof value === 'number' && !isNaN(value) ? value : 0
+        },
+      },
+      legend: {
+        data: ['白屏数', '影响用户数', '白屏率', '影响用户率'],
+        bottom: 10,
+      },
+      grid: {
+        left: '4%',
+        right: '6%',
+        bottom: 60,
+        top: 40,
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: xData,
+      },
+      yAxis: [
+        {
+          type: 'value',
+          name: '',
+          position: 'left',
+        },
+        {
+          type: 'value',
+          name: '',
+          position: 'right',
+          axisLabel: {
+            formatter: '{value} %',
+          },
+        },
+      ],
+      series: [
+        {
+          name: '白屏数',
+          type: 'line',
+          smooth: true,
+          yAxisIndex: 0,
+          symbol: 'circle',
+          symbolSize: 6,
+          itemStyle: {
+            color: '#2d8cf0',
+          },
+          data: whiteScreenCount,
+        },
+        {
+          name: '影响用户数',
+          type: 'line',
+          smooth: true,
+          yAxisIndex: 0,
+          symbol: 'circle',
+          symbolSize: 6,
+          itemStyle: {
+            color: '#7c4dff',
+          },
+          data: affectedUserCount,
+        },
+        {
+          name: '白屏率',
+          type: 'line',
+          smooth: true,
+          yAxisIndex: 1,
+          symbol: 'circle',
+          symbolSize: 6,
+          itemStyle: {
+            color: '#00b894',
+          },
+          data: whiteScreenRate,
+        },
+        {
+          name: '影响用户率',
+          type: 'line',
+          smooth: true,
+          yAxisIndex: 1,
+          symbol: 'circle',
+          symbolSize: 6,
+          itemStyle: {
+            color: '#ff7675',
+          },
+          data: affectedUserRate,
+        },
+      ],
+    }
   }
 
   const columns: TableColumnsType<BlankListItem> = [
@@ -285,7 +308,8 @@ const BlankOverview: React.FC = () => {
             </Col>
             <Col>
               <Space>
-                <DatePicker.RangePicker />
+                <DatePicker.RangePicker value={dateRange} onChange={handleDateChange} />
+                <Button icon={<RedoOutlined />} loading={loading} onClick={handleRefresh} />
               </Space>
             </Col>
           </Row>
@@ -312,12 +336,13 @@ const BlankOverview: React.FC = () => {
                   options={statusOptions}
                 />
               </Space.Compact>
-              <Button icon={<RedoOutlined />} />
+              <Button icon={<RedoOutlined />} loading={loading} onClick={handleRefresh} />
             </Space>
             <div style={{ paddingTop: 24 }}>
               <Table
                 columns={columns}
-                dataSource={listData}
+                dataSource={blankList}
+                loading={loading}
                 pagination={{
                   pageSize: 10,
                   showTotal: (total) => `共 ${total} 条`,

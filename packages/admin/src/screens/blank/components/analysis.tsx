@@ -145,9 +145,12 @@ const BlankOverview: React.FC = () => {
     fetchWhiteScreenData()
   }, [dateRange])
 
-  const handleDateChange = (dates: any) => {
-    if (dates) {
-      setDateRange(dates)
+  const handleDateChange = (
+    dates: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null,
+    dateStrings: [string, string]
+  ) => {
+    if (dates && dates[0] && dates[1]) {
+      setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])
     }
   }
 

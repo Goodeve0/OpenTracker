@@ -28,6 +28,7 @@ import type { ErrorItem } from '../../types/error'
 import ChartWithAdd from '../../components/chart-with-add'
 import { ChartType } from '../../types'
 import { queryStatsData } from '../../api/track'
+import dayjs, { Dayjs } from 'dayjs'
 const { Content } = Layout
 const { Text } = Typography
 
@@ -442,7 +443,10 @@ const ErrorOverview = () => {
     }
   }, [])
 
-  const handleRefresh = (dates?: any, dateStrings?: any[]) => {
+  const handleRefresh = (
+    dates: [Dayjs | null, Dayjs | null] | null,
+    dateStrings?: [string, string]
+  ) => {
     let startTime: number | undefined
     let endTime: number | undefined
 
@@ -473,7 +477,7 @@ const ErrorOverview = () => {
                 <Button
                   type="primary"
                   icon={<ReloadOutlined />}
-                  onClick={handleButtonClick}
+                  onClick={() => handleRefresh([dayjs().subtract(7, 'day'), dayjs()])}
                   loading={isLoading}
                 >
                   刷新

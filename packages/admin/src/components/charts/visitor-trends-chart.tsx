@@ -5,11 +5,19 @@ import { Card } from 'antd'
 interface VisitorTrendsChartProps {
   title?: string
   height?: number
+  data?: {
+    dates?: string[]
+    values?: number[]
+  }
 }
 
 const VisitorTrendsChart: React.FC<VisitorTrendsChartProps> = ({
   title = '访客趋势',
   height = 300,
+  data = {
+    dates: [],
+    values: [],
+  },
 }) => {
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
@@ -19,16 +27,6 @@ const VisitorTrendsChart: React.FC<VisitorTrendsChartProps> = ({
 
     // 初始化图表
     chartInstance.current = echarts.init(chartRef.current)
-
-    // 模拟数据
-    const data = [
-      { name: '1月', value: 1200 },
-      { name: '2月', value: 1900 },
-      { name: '3月', value: 3000 },
-      { name: '4月', value: 2500 },
-      { name: '5月', value: 4000 },
-      { name: '6月', value: 3500 },
-    ]
 
     // 配置选项
     const option = {
@@ -45,7 +43,7 @@ const VisitorTrendsChart: React.FC<VisitorTrendsChartProps> = ({
       },
       xAxis: {
         type: 'category',
-        data: data.map((item) => item.name),
+        data: data.dates || [],
       },
       yAxis: {
         type: 'value',
@@ -55,7 +53,7 @@ const VisitorTrendsChart: React.FC<VisitorTrendsChartProps> = ({
         {
           name: '访客数',
           type: 'line',
-          data: data.map((item) => item.value),
+          data: data.values || [],
           smooth: true,
           itemStyle: {
             color: '#1890ff',
@@ -91,9 +89,35 @@ const VisitorTrendsChart: React.FC<VisitorTrendsChartProps> = ({
       if (resizeTimeout) clearTimeout(resizeTimeout)
       chartInstance.current?.dispose()
     }
-  }, [])
+  }, [data])
 
-  return <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
+  // 检查是否有数据
+  const isEmptyData =
+    !data.dates || data.dates.length === 0 || !data.values || data.values.length === 0
+
+  return (
+    <div style={{ height: `${height}px`, width: '100%', position: 'relative' }}>
+      {isEmptyData && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+            zIndex: 1,
+          }}
+        >
+          <div style={{ color: '#8c8c8c', fontSize: '14px' }}>暂无数据</div>
+        </div>
+      )}
+      <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
+    </div>
+  )
 }
 
 export default VisitorTrendsChart

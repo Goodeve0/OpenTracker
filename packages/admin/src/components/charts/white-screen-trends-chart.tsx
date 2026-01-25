@@ -2,16 +2,26 @@ import React, { useEffect, useRef } from 'react'
 import { Spin } from 'antd'
 import * as echarts from 'echarts'
 
+interface WhiteScreenTrendData {
+  date: string
+  whiteScreenCount: number
+  affectedUserCount: number
+  whiteScreenRate: number
+  affectedUserRate: number
+}
+
 interface WhiteScreenTrendsChartProps {
   title?: string
   height?: number
   loading?: boolean
+  data?: WhiteScreenTrendData[]
 }
 
 const WhiteScreenTrendsChart: React.FC<WhiteScreenTrendsChartProps> = ({
   title = '白屏趋势分析',
   height = 300,
   loading = false,
+  data = [],
 }) => {
   const chartRef = React.useRef<HTMLDivElement>(null)
   const chartInstance = React.useRef<echarts.ECharts | null>(null)
@@ -21,20 +31,12 @@ const WhiteScreenTrendsChart: React.FC<WhiteScreenTrendsChartProps> = ({
 
     chartInstance.current = echarts.init(chartRef.current)
 
-    // 模拟白屏趋势数据
-    const xData = [
-      '2025/12/14',
-      '2025/12/15',
-      '2025/12/16',
-      '2025/12/17',
-      '2025/12/18',
-      '2025/12/19',
-      '2025/12/20',
-    ]
-    const whiteScreenCount = [0, 5, 12, 16, 4, 10, 18]
-    const affectedUserCount = [0, 1, 3, 2, 1, 2, 3]
-    const whiteScreenRate = [0, 0.2, 0.45, 0.67, 0.25, 0.6, 1.2]
-    const affectedUserRate = [0, 1.1, 0.9, 0.52, 0.3, 0.7, 1.15]
+    // 处理数据，转换为图表所需格式
+    const xData = data.map((item) => item.date)
+    const whiteScreenCount = data.map((item) => item.whiteScreenCount)
+    const affectedUserCount = data.map((item) => item.affectedUserCount)
+    const whiteScreenRate = data.map((item) => item.whiteScreenRate)
+    const affectedUserRate = data.map((item) => item.affectedUserRate)
 
     const option = {
       tooltip: {
@@ -152,7 +154,7 @@ const WhiteScreenTrendsChart: React.FC<WhiteScreenTrendsChartProps> = ({
       if (resizeTimeout) clearTimeout(resizeTimeout)
       chartInstance.current?.dispose()
     }
-  }, [])
+  }, [data])
 
   useEffect(() => {
     if (chartInstance.current) {
@@ -164,7 +166,32 @@ const WhiteScreenTrendsChart: React.FC<WhiteScreenTrendsChartProps> = ({
     }
   }, [loading])
 
-  return <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
+  // 检查是否有数据
+  const isEmptyData = !data || data.length === 0
+
+  return (
+    <div style={{ height: `${height}px`, width: '100%', position: 'relative' }}>
+      {isEmptyData && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+            zIndex: 1,
+          }}
+        >
+          <div style={{ color: '#8c8c8c', fontSize: '14px' }}>暂无数据</div>
+        </div>
+      )}
+      <div ref={chartRef} style={{ height: `${height}px`, width: '100%' }} />
+    </div>
+  )
 }
 
 export default WhiteScreenTrendsChart
