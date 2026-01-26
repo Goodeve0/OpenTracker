@@ -16,3 +16,6 @@ export { reportPerformance, reportBehavior, reportError, reportWhiteScreen } fro
 
 // 导出事件总线
 export { trackEventBus } from './event-bus/event-bus.js'
+// 导出沙箱相关内容
+export { getTrackerView, destroyTrackerView } from './sandbox/index.js'
+export type { ProxySandbox } from './sandbox/index.js'

@@ -10,6 +10,8 @@ import {
 } from '../../types/src/core/config.js'
 import { PluginManager } from './plugin/plugin-manager.js'
 import { PluginContext } from './plugin/types.js'
+//引入沙箱相关内容
+import { getTrackerView, destroyTrackerView } from './sandbox/index.js'
 export class LifecycleManager {
   private hooks: Map<LifecycleHook, LifecycleHookFunction[]> = new Map()
   private config: LifecycleManagerConfig
@@ -381,7 +383,7 @@ export const destroyTracker = async (): Promise<void> => {
   // 清除全局实例
   globalTrackerInstance = null
   Tracker.clearInstance()
-
+  destroyTrackerView()
   console.log('[Tracker] SDK已销毁')
 }
 
@@ -406,7 +408,7 @@ export const getTracker = (): Tracker => {
 
 // 性能数据自动上报方法
 export const reportPerformance = async (data: Record<string, number>): Promise<void> => {
-  const tracker = getTracker()
+  const tracker = getTrackerView(getTracker().getConfig())
   await tracker.report('performance', data)
 }
 
@@ -416,7 +418,7 @@ export const reportBehavior = async (
   data: Record<string, any>,
   immediate = type === 'pv'
 ): Promise<void> => {
-  const tracker = getTracker()
+  const tracker = getTrackerView(getTracker().getConfig())
   await tracker.report('behavior', { ...data, eventName: `behavior_${type}` }, immediate)
 }
 
@@ -425,7 +427,7 @@ export const reportError = async (
   error: Error | string,
   extra?: Record<string, any>
 ): Promise<void> => {
-  const tracker = getTracker()
+  const tracker = getTrackerView(getTracker().getConfig())
   const errorData = {
     message: error instanceof Error ? error.message : error,
     stack: error instanceof Error ? error.stack || '' : '',
@@ -436,7 +438,7 @@ export const reportError = async (
 
 // 白屏错误自动上报方法
 export const reportWhiteScreen = async (data: WhiteScreenInfo): Promise<void> => {
-  const tracker = getTracker()
+  const tracker = getTrackerView(getTracker().getConfig())
   await tracker.report('white_screen', data, true)
 }
 
@@ -446,6 +448,6 @@ export const trackEvent = async (
   eventData?: Record<string, any>,
   isImmediate = false
 ): Promise<void> => {
-  const tracker = getTracker()
+  const tracker = getTrackerView(getTracker().getConfig())
   await tracker.trackEvent(eventType, eventData, isImmediate)
 }

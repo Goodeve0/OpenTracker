@@ -1,6 +1,6 @@
-import { Tracker } from '../reporter'
-import { SDK_PROTECTED_METHODS } from '../../../protected-list'
-import type { TrackerConfig } from '../../../types/src/core/config'
+import { Tracker } from '../tracker.js'
+import { SDK_PROTECTED_METHODS } from '../../../protected-list/index.js'
+import type { TrackerConfig } from '../../../types/src/core/config.js'
 
 export class ProxySandbox {
   private readonly tracker: Tracker

@@ -1,12 +1,11 @@
-import { ProxySandbox } from './ProxySandbox'
-import type { TrackerConfig } from '../../../types/src/core/config'
-import { Tracker } from '../../src/reporter'
+import { ProxySandbox } from './ProxySandbox.js'
+import type { TrackerConfig } from '../../../types/src/core/config.js'
+import { Tracker } from '../tracker.js'
 
 // 全局沙箱单例（避免重复初始化）
 let sandboxInstance: ProxySandbox | null = null
 
 /**
- * 业务层调用的入口：获取沙箱包装后的 Tracker 代理
  * @param config SDK 所需的配置
  * @returns 沙箱代理后的 Tracker 实例
  */
