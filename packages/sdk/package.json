@@ -3,11 +3,13 @@
   "version": "0.0.1",
   "type": "module",
   "description": "OpenTracker SDK - 客户端追踪SDK",
-  "main": "dist/index.js",
+  "main": "dist/index.umd.js",
+  "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build && tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "tracker",
