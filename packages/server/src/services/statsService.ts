@@ -7,6 +7,7 @@ interface StatsParams {
   limit?: number
   page?: number
   pageSize?: number
+  userId?: string
 }
 
 class StatsService {
@@ -76,13 +77,18 @@ class StatsService {
     }
   }
   //性能均值
-  private async performanceAvg({ startTime, endTime }: StatsParams) {
+  private async performanceAvg({ startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const list = await prisma.performance.findMany({
       where: {
         timestamp: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       select: {
         timestamp: true,
@@ -298,7 +304,7 @@ class StatsService {
   }
 
   //错误 Top N
-  private async errorTopN({ startTime, endTime }: StatsParams, limit: number) {
+  private async errorTopN({ startTime, endTime, userId }: StatsParams, limit: number) {
     // 如果没有提供时间范围，默认查询最近24小时
     const defaultStartTime = new Date()
     defaultStartTime.setHours(defaultStartTime.getHours() - 24)
@@ -310,6 +316,7 @@ class StatsService {
           gte: startTime ? new Date(startTime) : defaultStartTime,
           lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       _count: {
         errorType: true,
@@ -351,10 +358,14 @@ class StatsService {
   }
 
   //白屏率
-  private async blankRate({ startTime, endTime }: StatsParams) {
+  private async blankRate({ startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const timeRange = {
-      gte: startTime ? new Date(startTime) : undefined,
-      lte: endTime ? new Date(endTime) : undefined,
+      gte: startTime ? new Date(startTime) : defaultStartTime,
+      lte: endTime ? new Date(endTime) : new Date(),
     }
 
     const [blankCount, pv] = await Promise.all([
@@ -362,11 +373,13 @@ class StatsService {
         where: {
           isBlank: 'true',
           timestamp: timeRange,
+          project_id: userId, // 添加项目ID过滤
         },
       }),
       prisma.track_Event.count({
         where: {
           created_at: timeRange,
+          project_id: userId, // 添加项目ID过滤
         },
       }),
     ])
@@ -394,14 +407,19 @@ class StatsService {
   }
 
   //访客趋势
-  private async visitorTrends({ startTime, endTime }: StatsParams) {
+  private async visitorTrends({ startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const list = await prisma.track_Event.groupBy({
       by: ['created_at'],
       where: {
         created_at: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       _count: {
         id: true,
@@ -428,14 +446,19 @@ class StatsService {
   }
 
   //设备分布
-  private async visitorDevice({ startTime, endTime }: StatsParams) {
+  private async visitorDevice({ startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const list = await prisma.track_Event.groupBy({
       by: ['ua'],
       where: {
         created_at: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       _count: {
         id: true,
@@ -483,14 +506,19 @@ class StatsService {
   }
 
   //事件分析
-  private async behaviorEvents({ startTime, endTime }: StatsParams) {
+  private async behaviorEvents({ startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const list = await prisma.behavior.groupBy({
       by: ['event'],
       where: {
         timestamp: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       _count: {
         id: true,
@@ -509,14 +537,19 @@ class StatsService {
   }
 
   //页面访问
-  private async behaviorPageViews({ startTime, endTime }: StatsParams) {
+  private async behaviorPageViews({ startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const list = await prisma.behavior.groupBy({
       by: ['pageUrl'],
       where: {
         timestamp: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       _count: {
         id: true,
@@ -535,7 +568,7 @@ class StatsService {
   }
 
   //错误趋势
-  private async errorTrends({ startTime, endTime }: StatsParams) {
+  private async errorTrends({ startTime, endTime, userId }: StatsParams) {
     // 如果没有提供时间范围，默认查询最近24小时
     const defaultStartTime = new Date()
     defaultStartTime.setHours(defaultStartTime.getHours() - 24)
@@ -547,6 +580,7 @@ class StatsService {
           gte: startTime ? new Date(startTime) : defaultStartTime,
           lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       _count: {
         id: true,
@@ -613,15 +647,20 @@ class StatsService {
   }
 
   //白屏趋势
-  private async whiteScreenTrends({ startTime, endTime }: StatsParams) {
+  private async whiteScreenTrends({ startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const list = await prisma.blank_Screen.groupBy({
       by: ['timestamp'],
       where: {
         isBlank: 'true',
         timestamp: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       _count: {
         id: true,
@@ -648,15 +687,20 @@ class StatsService {
   }
 
   //白屏TOP页面
-  private async whiteScreenTopPages({ startTime, endTime }: StatsParams) {
+  private async whiteScreenTopPages({ startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const list = await prisma.blank_Screen.groupBy({
       by: ['pageUrl'],
       where: {
         isBlank: 'true',
         timestamp: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       _count: {
         id: true,
@@ -676,14 +720,19 @@ class StatsService {
   }
 
   //高频报错页面
-  private async highErrorPages({ startTime, endTime }: StatsParams) {
+  private async highErrorPages({ startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const list = await prisma.error.groupBy({
       by: ['pageUrl'],
       where: {
         timestamp: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       _count: {
         id: true,
@@ -703,25 +752,31 @@ class StatsService {
   }
 
   //错误列表
-  private async errorList({ startTime, endTime, page = 1, pageSize = 20 }: StatsParams) {
+  private async errorList({ startTime, endTime, page = 1, pageSize = 20, userId }: StatsParams) {
     const skip = (page - 1) * pageSize
     const take = pageSize
+
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
 
     const [total, list] = await Promise.all([
       prisma.error.count({
         where: {
           timestamp: {
-            gte: startTime ? new Date(startTime) : undefined,
-            lte: endTime ? new Date(endTime) : undefined,
+            gte: startTime ? new Date(startTime) : defaultStartTime,
+            lte: endTime ? new Date(endTime) : new Date(),
           },
+          project_id: userId, // 添加项目ID过滤
         },
       }),
       prisma.error.findMany({
         where: {
           timestamp: {
-            gte: startTime ? new Date(startTime) : undefined,
-            lte: endTime ? new Date(endTime) : undefined,
+            gte: startTime ? new Date(startTime) : defaultStartTime,
+            lte: endTime ? new Date(endTime) : new Date(),
           },
+          project_id: userId, // 添加项目ID过滤
         },
         skip,
         take,
@@ -738,20 +793,36 @@ class StatsService {
   }
 
   //按错误类型查询
-  private async errorByType({ page = 1, pageSize = 20 }: StatsParams, errorType: string) {
+  private async errorByType(
+    { page = 1, pageSize = 20, startTime, endTime, userId }: StatsParams,
+    errorType: string
+  ) {
     const skip = (page - 1) * pageSize
     const take = pageSize
 
-    // 直接查询所有错误，不限制时间范围
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     const [total, list] = await Promise.all([
       prisma.error.count({
         where: {
           errorType,
+          timestamp: {
+            gte: startTime ? new Date(startTime) : defaultStartTime,
+            lte: endTime ? new Date(endTime) : new Date(),
+          },
+          project_id: userId, // 添加项目ID过滤
         },
       }),
       prisma.error.findMany({
         where: {
           errorType,
+          timestamp: {
+            gte: startTime ? new Date(startTime) : defaultStartTime,
+            lte: endTime ? new Date(endTime) : new Date(),
+          },
+          project_id: userId, // 添加项目ID过滤
         },
         skip,
         take,
@@ -768,9 +839,20 @@ class StatsService {
   }
 
   //客户来源分析
-  private async customerSource({ limit = 10 }: StatsParams) {
-    // 查询所有行为数据
+  private async customerSource({ limit = 10, startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
+    // 查询指定时间范围内的行为数据
     const behaviors = await prisma.behavior.findMany({
+      where: {
+        timestamp: {
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
+        },
+        project_id: userId, // 添加项目ID过滤
+      },
       select: {
         extra: true,
       },
@@ -808,14 +890,19 @@ class StatsService {
   }
 
   //客户增长趋势
-  private async customerGrowth({ startTime, endTime }: StatsParams) {
+  private async customerGrowth({ startTime, endTime, userId }: StatsParams) {
+    // 如果没有提供时间范围，默认查询最近24小时
+    const defaultStartTime = new Date()
+    defaultStartTime.setHours(defaultStartTime.getHours() - 24)
+
     // 查询指定时间范围内的行为数据
     const behaviors = await prisma.behavior.findMany({
       where: {
         timestamp: {
-          gte: startTime ? new Date(startTime) : undefined,
-          lte: endTime ? new Date(endTime) : undefined,
+          gte: startTime ? new Date(startTime) : defaultStartTime,
+          lte: endTime ? new Date(endTime) : new Date(),
         },
+        project_id: userId, // 添加项目ID过滤
       },
       select: {
         timestamp: true,

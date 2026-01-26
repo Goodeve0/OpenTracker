@@ -1,17 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Spin } from 'antd'
 import { Pie } from '@ant-design/charts'
-
-// 从原页面复制的获取行为数据的函数
-const getBehaviorsFromLocalStorage = (): any[] => {
-  try {
-    const behaviors = localStorage.getItem('behaviors')
-    return behaviors ? JSON.parse(behaviors) : []
-  } catch (error) {
-    console.error('从 localStorage 获取行为数据失败:', error)
-    return []
-  }
-}
+import { queryStatsData } from '../../api/track'
 
 interface CustomerSourceChartProps {
   title?: string
@@ -26,57 +16,65 @@ const CustomerSourceChart: React.FC<CustomerSourceChartProps> = ({
 }) => {
   const [data, setData] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [localLoading, setLocalLoading] = useState(false)
 
-  // 从原页面复制的完整数据获取和处理逻辑
+  // 从后端API获取客户来源数据
   useEffect(() => {
     const fetchSourceData = async () => {
       setError(null)
+      setLocalLoading(true)
       try {
-        // 从 localStorage 获取行为数据 - 与原页面完全相同
-        const behaviors = getBehaviorsFromLocalStorage()
-
-        // 模拟客户来源数据（基于行为数据） - 与原页面完全相同
-        // 由于真实行为数据中可能没有来源信息，我们使用行为类型作为来源分类
-        const sourceCounts: Record<string, number> = {}
-
-        behaviors.forEach((behavior: any) => {
-          const sourceType = behavior.type || 'direct' // 使用行为类型作为来源 - 与原页面完全相同
-          sourceCounts[sourceType] = (sourceCounts[sourceType] || 0) + 1
+        // 调用后端API获取客户来源数据
+        const response = await queryStatsData({
+          type: 'customer_source',
         })
 
-        // 转换为用户友好的来源名称 - 与原页面完全相同
-        const sourceMapping: Record<string, string> = {
-          behavior: '直接访问',
-          page_view: '页面访问',
-          click: '点击事件',
-          scroll: '滚动事件',
-          search: '搜索事件',
-          direct: '直接访问',
-          default: '其他来源',
-        }
+        if (response.code === 200 && response.data) {
+          let sourceData: any[] = []
 
-        // 计算总行为数 - 与原页面完全相同
-        const totalBehaviors = behaviors.length
+          if (Array.isArray(response.data)) {
+            // 直接使用数组格式数据
+            sourceData = response.data
+          } else if (response.data.sources && response.data.values) {
+            // 处理后端返回的sources和values格式
+            sourceData = response.data.sources.map((source: string, index: number) => ({
+              name: source,
+              value: response.data.values[index] || 0,
+            }))
+          }
 
-        // 生成来源数据 - 与原页面完全相同
-        const sourceData = Object.entries(sourceCounts)
-          .map(([key, value]) => ({
-            name: sourceMapping[key] || sourceMapping['default'],
-            value: totalBehaviors > 0 ? (value / totalBehaviors) * 100 : 0,
+          // 转换为用户友好的来源名称
+          const sourceMapping: Record<string, string> = {
+            behavior: '直接访问',
+            page_view: '页面访问',
+            click: '点击事件',
+            scroll: '滚动事件',
+            search: '搜索事件',
+            direct: '直接访问',
+            default: '其他来源',
+          }
+
+          // 格式化数据
+          const formattedData = sourceData.map((item) => ({
+            name: sourceMapping[item.name] || item.name || '其他来源',
+            value: item.value,
           }))
-          .sort((a, b) => b.value - a.value) // 按占比降序排序 - 与原页面完全相同
 
-        setData(sourceData)
+          setData(formattedData)
+        }
       } catch (err) {
         setError('获取客户来源数据失败')
         console.error('获取客户来源数据失败:', err)
+        setData([]) // 确保数据为空，触发"暂无数据"显示
+      } finally {
+        setLocalLoading(false)
       }
     }
 
     fetchSourceData()
   }, [])
 
-  if (loading) {
+  if (loading || localLoading) {
     return (
       <div
         style={{
@@ -92,38 +90,51 @@ const CustomerSourceChart: React.FC<CustomerSourceChartProps> = ({
     )
   }
 
-  if (error) {
-    return (
-      <div
-        style={{
-          width: '100%',
-          height,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#ff4d4f',
-        }}
-      >
-        {error}
-      </div>
-    )
-  }
+  // 无论是否有错误，只要数据为空就显示"暂无数据"
+  const isEmptyData = !data || data.length === 0
 
   return (
-    <div style={{ width: '100%', height }}>
+    <div style={{ width: '100%', height, position: 'relative' }}>
+      {isEmptyData && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+            zIndex: 1,
+          }}
+        >
+          <div style={{ color: '#8c8c8c', fontSize: '14px' }}>暂无数据</div>
+        </div>
+      )}
       <Pie
         data={data}
         angleField="value"
         colorField="name"
-        color={['#1890ff', '#52c41a', '#722ed1', '#faad14']}
+        color={['#1890ff', '#52c41a', '#fa8c16', '#722ed1', '#eb2f96']}
         label={{
-          type: 'outer',
-          content: (datum: any) => `${datum.name}: ${datum.value}%`,
+          visible: true,
+          formatter: (datum: any) => {
+            if (!datum || typeof datum.value !== 'number') {
+              return ''
+            }
+            return `${datum.value.toFixed(2)}%`
+          },
         }}
-        tooltip={{ formatter: (datum: any) => `${datum.name}: ${datum.value}%` }}
-        // 添加自适应配置，防止标签溢出
-        padding="auto"
-        fit="true"
+        tooltip={{
+          formatter: (datum: any) => {
+            if (!datum || typeof datum.value !== 'number') {
+              return ''
+            }
+            return `${datum.name}: ${datum.value.toFixed(2)}%`
+          },
+        }}
       />
     </div>
   )
