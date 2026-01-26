@@ -6,6 +6,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
 export interface TokenPayload {
   userId: string
   username: string
+  name?: string
 }
 
 export class JWTUtil {

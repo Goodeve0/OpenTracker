@@ -103,7 +103,7 @@ export interface EventFilterParams {
 
 // 创建 axios 实例
 const api = axios.create({
-  baseURL: '', // 空字符串，使用Vite代理
+  baseURL: API_BASE_URL, // 使用配置的API基础URL
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ const api = axios.create({
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('authToken')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -131,7 +131,7 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
+      localStorage.removeItem('authToken')
       // 检查当前页面是否已经是登录页面，避免登录失败时页面刷新
       // 登录页面的实际路径是 / 而不是 /login
       if (window.location.pathname !== '/') {
@@ -142,55 +142,33 @@ api.interceptors.response.use(
   }
 )
 
-// 从 localStorage 获取行为数据
-const getBehaviorsFromLocalStorage = (): any[] => {
-  try {
-    const behaviors = localStorage.getItem('behaviors')
-    return behaviors ? JSON.parse(behaviors) : []
-  } catch (error) {
-    console.error('从 localStorage 获取行为数据失败:', error)
-    return []
-  }
-}
-
 // 行为分析相关 API
 export const behaviorAPI = {
   // 获取页面访问数据
   getPageVisits: async (): Promise<ApiResponse<PageVisitData[]>> => {
     try {
-      // 从 localStorage 获取行为数据
-      const behaviors = getBehaviorsFromLocalStorage()
-
-      // 按页面URL分组计算访问数据
-      const pageDataMap: Record<string, PageVisitData> = {}
-
-      behaviors.forEach((behavior: any) => {
-        const pageUrl = behavior.page || window.location.origin
-
-        if (!pageDataMap[pageUrl]) {
-          pageDataMap[pageUrl] = {
-            pageUrl,
-            pageViews: 0,
-            uniqueVisitors: 0,
-            bounceRate: '0%',
-            averageStayTime: '0:00',
-            exitRate: '0%',
-          }
-        }
-
-        // 增加页面访问量
-        pageDataMap[pageUrl].pageViews += 1
-
-        // 简化处理，使用访问量作为唯一访客数
-        pageDataMap[pageUrl].uniqueVisitors = pageDataMap[pageUrl].pageViews
+      const response = await api.get('/api/stats', {
+        params: {
+          type: 'behavior_page_views',
+        },
       })
 
-      const pageData = Object.values(pageDataMap)
+      const data = response.data.data
+
+      // 转换数据格式
+      const pageVisits: PageVisitData[] = data.map((item: any) => ({
+        pageUrl: item.name,
+        pageViews: item.count,
+        uniqueVisitors: item.count, // 简化处理
+        bounceRate: '0%', // 暂不支持
+        averageStayTime: '0:00', // 暂不支持
+        exitRate: '0%', // 暂不支持
+      }))
 
       return {
         code: 200,
         message: 'success',
-        data: pageData,
+        data: pageVisits,
       }
     } catch (error) {
       console.error('获取页面访问数据失败:', error)
@@ -214,30 +192,34 @@ export const behaviorAPI = {
     }>
   > => {
     try {
-      // 从 localStorage 获取行为数据
-      const behaviors = getBehaviorsFromLocalStorage()
-
-      // 分页处理
       const page = filterParams.page || 1
       const pageSize = filterParams.pageSize || 10
-      const total = behaviors.length
 
-      // 转换为UserBehaviorData格式
-      const userBehaviors: UserBehaviorData[] = behaviors.map((behavior: any, index: number) => ({
+      // 调用后端的stats接口获取事件数据
+      const response = await api.get('/api/stats', {
+        params: {
+          type: 'behavior_events',
+        },
+      })
+
+      const eventData = response.data.data || []
+
+      // 转换数据格式
+      const userBehaviors: UserBehaviorData[] = eventData.map((item: any, index: number) => ({
         id: `event-${index + 1}`,
-        timestamp: dayjs(behavior.timestamp).toISOString(),
-        userType: UserType.GUEST,
-        behaviorType: (behavior.type || 'page_view') as EventType,
-        pageUrl: behavior.page || window.location.origin,
-        duration: behavior.duration || 0,
-        device: DeviceType.DESKTOP,
+        timestamp: new Date().toISOString(),
+        userType: 'guest',
+        behaviorType: item.name as EventType,
+        pageUrl: 'https://example.com',
+        duration: 0,
+        device: 'desktop',
         browser: 'Unknown',
         referrer: '',
-        sessionId: `session-${Math.floor(Math.random() * 1000)}`,
-        eventDetails: behavior.data,
+        sessionId: 'session-' + Math.floor(Math.random() * 1000000),
+        eventDetails: { count: item.count },
       }))
 
-      // 分页
+      // 模拟分页
       const startIndex = (page - 1) * pageSize
       const endIndex = startIndex + pageSize
       const paginatedData = userBehaviors.slice(startIndex, endIndex)
@@ -247,7 +229,7 @@ export const behaviorAPI = {
         message: 'success',
         data: {
           data: paginatedData,
-          total,
+          total: userBehaviors.length,
           page,
           pageSize,
         },
@@ -273,46 +255,32 @@ export const behaviorAPI = {
     endDate: string
   ): Promise<ApiResponse<BehaviorTrendData[]>> => {
     try {
-      // 从 localStorage 获取行为数据
-      const behaviors = getBehaviorsFromLocalStorage()
-
-      // 按日期分组计算趋势数据
-      const trendMap: Record<string, BehaviorTrendData> = {}
-      const start = dayjs(startDate)
-      const end = dayjs(endDate)
-      const days = end.diff(start, 'day') + 1
-
-      // 初始化日期范围
-      for (let i = 0; i < days; i++) {
-        const date = start.add(i, 'day').format('YYYY-MM-DD')
-        trendMap[date] = {
-          date,
-          pageViews: 0,
-          uniqueVisitors: 0,
-          avgDuration: 0,
-          bounceRate: 0,
-        }
-      }
-
-      // 统计每天的行为数据
-      behaviors.forEach((behavior: any) => {
-        const behaviorDate = dayjs(behavior.timestamp).format('YYYY-MM-DD')
-
-        if (trendMap[behaviorDate]) {
-          // 增加页面访问量
-          trendMap[behaviorDate].pageViews += 1
-
-          // 简化处理，使用访问量作为唯一访客数
-          trendMap[behaviorDate].uniqueVisitors = trendMap[behaviorDate].pageViews
-        }
+      const response = await api.get('/api/stats', {
+        params: {
+          type: 'visitor_trends',
+        },
       })
 
-      const trendData = Object.values(trendMap)
+      const data = response.data.data || {}
+
+      // 转换数据格式
+      const trends: BehaviorTrendData[] = []
+      if (data.dates && data.values && data.dates.length === data.values.length) {
+        for (let i = 0; i < data.dates.length; i++) {
+          trends.push({
+            date: data.dates[i],
+            pageViews: data.values[i],
+            uniqueVisitors: data.values[i], // 简化处理
+            avgDuration: 0, // 暂不支持
+            bounceRate: 0, // 暂不支持
+          })
+        }
+      }
 
       return {
         code: 200,
         message: 'success',
-        data: trendData,
+        data: trends,
       }
     } catch (error) {
       console.error('获取行为趋势数据失败:', error)
@@ -329,43 +297,30 @@ export const behaviorAPI = {
     filterParams: EventFilterParams = {}
   ): Promise<ApiResponse<EventStatsData>> => {
     try {
-      // 从 localStorage 获取行为数据
-      const behaviors = getBehaviorsFromLocalStorage()
-
-      // 统计事件类型
-      const eventTypeCount: Record<string, number> = {}
-      const pageCount: Record<string, number> = {}
-
-      behaviors.forEach((behavior: any) => {
-        // 统计事件类型
-        const eventType = behavior.type || 'page_view'
-        eventTypeCount[eventType] = (eventTypeCount[eventType] || 0) + 1
-
-        // 统计页面访问
-        const page = behavior.page || window.location.origin
-        pageCount[page] = (pageCount[page] || 0) + 1
+      const response = await api.get('/api/stats', {
+        params: {
+          type: 'behavior_events',
+        },
       })
+
+      const eventData = response.data.data
 
       // 计算统计数据
-      const totalEvents = behaviors.length
-      const totalUniqueVisitors = behaviors.length // 简化处理
+      const totalEvents = eventData.reduce((sum: number, item: any) => sum + item.count, 0)
+      const totalUniqueVisitors = totalEvents // 简化处理
       const avgEventPerVisitor = totalUniqueVisitors > 0 ? totalEvents / totalUniqueVisitors : 0
 
-      // 找出最活跃的页面
-      let mostActivePage = window.location.origin
-      let maxPageVisits = 0
-      Object.entries(pageCount).forEach(([page, count]) => {
-        if (count > maxPageVisits) {
-          maxPageVisits = count
-          mostActivePage = page
-        }
-      })
+      // 找出最活跃的页面（暂时使用事件数最多的事件类型）
+      let mostActivePage = ''
+      if (eventData.length > 0) {
+        mostActivePage = eventData[0].name
+      }
 
       // 获取前5个事件类型
-      const topEventTypes = Object.entries(eventTypeCount)
-        .map(([type, count]) => ({ type: type as EventType, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5)
+      const topEventTypes = eventData.slice(0, 5).map((item: any) => ({
+        type: item.name as EventType,
+        count: item.count,
+      }))
 
       const statsData: EventStatsData = {
         totalEvents,
@@ -401,26 +356,21 @@ export const behaviorAPI = {
     filterParams: EventFilterParams = {}
   ): Promise<ApiResponse<EventTypeDistributionData[]>> => {
     try {
-      // 从 localStorage 获取行为数据
-      const behaviors = getBehaviorsFromLocalStorage()
-
-      // 统计事件类型
-      const eventTypeCount: Record<string, number> = {}
-      const totalEvents = behaviors.length
-
-      behaviors.forEach((behavior: any) => {
-        const eventType = behavior.type || 'page_view'
-        eventTypeCount[eventType] = (eventTypeCount[eventType] || 0) + 1
+      const response = await api.get('/api/stats', {
+        params: {
+          type: 'behavior_events',
+        },
       })
 
+      const eventData = response.data.data
+      const totalEvents = eventData.reduce((sum: number, item: any) => sum + item.count, 0)
+
       // 计算分布百分比
-      const distribution: EventTypeDistributionData[] = Object.entries(eventTypeCount)
-        .map(([type, count]) => ({
-          type: type as EventType,
-          count,
-          percentage: totalEvents > 0 ? (count / totalEvents) * 100 : 0,
-        }))
-        .sort((a, b) => b.count - a.count)
+      const distribution: EventTypeDistributionData[] = eventData.map((item: any) => ({
+        type: item.name as EventType,
+        count: item.count,
+        percentage: totalEvents > 0 ? (item.count / totalEvents) * 100 : 0,
+      }))
 
       return {
         code: 200,
@@ -442,13 +392,23 @@ export const behaviorAPI = {
     filterParams: EventFilterParams = {}
   ): Promise<ApiResponse<DeviceDistributionData[]>> => {
     try {
-      // 从 localStorage 获取行为数据
-      const behaviors = getBehaviorsFromLocalStorage()
+      const response = await api.get('/api/stats', {
+        params: {
+          type: 'visitor_device',
+        },
+      })
 
-      // 简化处理，只返回默认设备分布
-      const distribution: DeviceDistributionData[] = [
-        { type: DeviceType.DESKTOP, count: behaviors.length, percentage: 100 },
-      ]
+      const data = response.data.data || []
+
+      // 计算总设备数
+      const totalDevices = data.reduce((sum: number, item: any) => sum + item.count, 0)
+
+      // 转换数据格式
+      const distribution: DeviceDistributionData[] = data.map((item: any) => ({
+        type: item.name as DeviceType,
+        count: item.count,
+        percentage: totalDevices > 0 ? (item.count / totalDevices) * 100 : 0,
+      }))
 
       return {
         code: 200,

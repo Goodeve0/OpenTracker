@@ -19,6 +19,9 @@
   "dependencies": {
     "@ant-design/charts": "^2.6.7",
     "@ant-design/icons": "^6.1.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "antd": "^5.28.1",
@@ -37,7 +40,9 @@
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitejs/plugin-react-swc": "^4.2.2",
+    "dagre": "^0.8.5",
     "eslint-plugin-react": "^7.37.5",
+    "terser": "^5.44.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.2"
   }

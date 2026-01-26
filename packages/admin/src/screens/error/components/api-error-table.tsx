@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { Table, Button, Tag, Space, Drawer, Descriptions } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Table, Button, Tag, Space, Drawer, Descriptions, message, Spin } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { queryStatsData } from '../../../api/track'
 
 // 1. 定义数据契约
 interface ApiErrorItem {
@@ -17,30 +18,58 @@ interface ApiErrorItem {
 const ApiErrorTable = () => {
   const [visible, setVisible] = useState(false)
   const [current, setCurrent] = useState<ApiErrorItem | null>(null)
+  const [dataSource, setDataSource] = useState<ApiErrorItem[]>([])
+  const [loading, setLoading] = useState(false)
 
-  // 2. 模拟假数据
-  const dataSource: ApiErrorItem[] = [
-    {
-      id: '1',
-      url: '/api/v1/user/profile',
-      method: 'POST',
-      status: 500, // 服务器报错
-      duration: 120, // 120ms
-      requestBody: '{ "userId": 123 }',
-      responseBody: '{ "error": "Internal Server Error", "code": 50001 }',
-      timestamp: '2023-12-11 14:00:00',
-    },
-    {
-      id: '2',
-      url: 'https://google.com/api',
-      method: 'GET',
-      status: 0, // 0 通常代表跨域 (CORS) 或者网络断开了
-      duration: 15,
-      requestBody: '',
-      responseBody: 'Network Error / CORS Blocked',
-      timestamp: '2023-12-11 14:05:00',
-    },
-  ]
+  // 2. 从后端获取数据
+  useEffect(() => {
+    fetchApiErrors()
+  }, [])
+
+  const fetchApiErrors = async () => {
+    setLoading(true)
+    try {
+      // 直接查询所有错误，然后在前端过滤出 API 错误
+      const response = await queryStatsData({ type: 'error_list', page: 1, pageSize: 50 })
+
+      if (response.code === 200 && response.data) {
+        const { list } = response.data
+        // 过滤出 API 错误，同时考虑可能的类型映射
+        const apiErrors = list.filter((item: any) => {
+          const errorType = item.errorType?.toLowerCase()
+          return errorType === 'api' || errorType === 'api错误' || errorType === '网络异常'
+        })
+        // 处理后端返回的数据，转换为前端需要的格式
+        const processedData = apiErrors.map((item: any) => {
+          let extra: any = {}
+          try {
+            if (item.extra && typeof item.extra === 'string') {
+              extra = JSON.parse(item.extra)
+            }
+          } catch (e) {
+            console.error('解析 extra 字段失败:', e)
+          }
+
+          return {
+            id: item.id?.toString() || Math.random().toString(36).substr(2, 9),
+            url: extra.url || item.pageUrl || '',
+            method: extra.method || 'GET',
+            status: extra.status || 500,
+            duration: extra.duration || 0,
+            requestBody: extra.requestBody || '',
+            responseBody: extra.responseBody || item.message || '',
+            timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : '',
+          }
+        })
+        setDataSource(processedData)
+      }
+    } catch (error) {
+      console.error('获取 API 错误数据失败:', error)
+      message.error('获取 API 错误数据失败')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // 3. 表格列配置
   const columns: ColumnsType<ApiErrorItem> = [
@@ -99,7 +128,9 @@ const ApiErrorTable = () => {
 
   return (
     <>
-      <Table rowKey="id" columns={columns} dataSource={dataSource} size="small" />
+      <Spin spinning={loading} tip="加载中...">
+        <Table rowKey="id" columns={columns} dataSource={dataSource} size="small" />
+      </Spin>
 
       {/* 侧边详情 */}
       <Drawer open={visible} onClose={() => setVisible(false)} width={640} title="API 请求详情">
@@ -107,9 +138,12 @@ const ApiErrorTable = () => {
           // 这里用 Descriptions 组件，适合展示 key-value 格式的信息
           <Descriptions column={1} bordered size="small">
             <Descriptions.Item label="请求 URL">{current.url}</Descriptions.Item>
+            <Descriptions.Item label="请求方法">{current.method}</Descriptions.Item>
             <Descriptions.Item label="状态码">
               {current.status === 0 ? '0 (跨域或网络故障)' : current.status}
             </Descriptions.Item>
+            <Descriptions.Item label="耗时">{current.duration}ms</Descriptions.Item>
+            <Descriptions.Item label="发生时间">{current.timestamp}</Descriptions.Item>
             <Descriptions.Item label="请求参数 (Body)">
               <pre style={{ maxHeight: 150, overflow: 'auto', margin: 0 }}>
                 {current.requestBody || '无'}

@@ -47,5 +47,8 @@
     "*.{json,md,css,scss}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "@ant-design/charts": "^2.6.6"
   }
 }

@@ -45,7 +45,7 @@ export interface DeviceModel {
 
 // 创建 axios 实例
 const api = axios.create({
-  baseURL: '', // 空字符串，使用Vite代理
+  baseURL: API_BASE_URL, // 使用配置的API基础URL
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ const api = axios.create({
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('authToken')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -73,7 +73,7 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
+      localStorage.removeItem('authToken')
       // 检查当前页面是否已经是登录页面，避免登录失败时页面刷新
       // 登录页面的实际路径是 / 而不是 /login
       if (window.location.pathname !== '/') {
@@ -166,37 +166,30 @@ export const visitorAPI = {
     endDate: string
   ): Promise<ApiResponse<VisitorDataPoint[]>> => {
     try {
-      // 从 localStorage 获取行为数据
-      const behaviors = getBehaviorsFromLocalStorage()
+      // 调用后端统计接口获取访客趋势数据
+      const startTime = dayjs(startDate).startOf('day').valueOf()
+      const endTime = dayjs(endDate).endOf('day').valueOf()
 
-      // 将行为数据按日期分组
-      const groupedByDate: Record<string, any[]> = {}
-      behaviors.forEach((behavior: any) => {
-        const date = dayjs(behavior.timestamp).format('YYYY-MM-DD')
-        if (!groupedByDate[date]) {
-          groupedByDate[date] = []
-        }
-        groupedByDate[date].push(behavior)
+      const response = await api.get('/api/stats', {
+        params: {
+          type: 'visitor_trends',
+          startTime,
+          endTime,
+        },
       })
 
-      // 生成访客趋势数据
+      // 处理后端返回的数据格式
+      const statsData = response.data.data
       const visitorData: VisitorDataPoint[] = []
-      const start = dayjs(startDate)
-      const end = dayjs(endDate)
-      const days = end.diff(start, 'day') + 1
 
-      for (let i = 0; i < days; i++) {
-        const date = start.add(i, 'day').format('YYYY-MM-DD')
-        const dayBehaviors = groupedByDate[date] || []
-
-        // 简单计算：假设每个行为代表1个访客，每3个行为代表1个浏览量
-        const visitors = dayBehaviors.length
-        const pageViews = Math.ceil(dayBehaviors.length * 1.5)
-
-        visitorData.push({
-          date,
-          visitors,
-          pageViews,
+      if (statsData && statsData.dates && statsData.values) {
+        // 将后端返回的数据转换为所需格式
+        statsData.dates.forEach((date: string, index: number) => {
+          visitorData.push({
+            date: dayjs(date).format('YYYY-MM-DD'),
+            visitors: statsData.values[index] || 0,
+            pageViews: Math.ceil((statsData.values[index] || 0) * 1.5), // 假设每个访客平均浏览1.5个页面
+          })
         })
       }
 

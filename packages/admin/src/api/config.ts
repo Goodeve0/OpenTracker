@@ -8,6 +8,8 @@ export const API_ENDPOINTS = {
   login: '/api/auth/login',
   register: '/api/auth/register',
   errors: '/api/errors',
+  profile: '/api/profile',
+  changePassword: '/api/auth/change-password',
 }
 
 // API 响应格式
@@ -23,6 +25,8 @@ export interface LoginData {
     id: string
     login: string
   }
+  token: string
+  expiresIn: string
 }
 
 export interface RegisterData {
@@ -30,4 +34,6 @@ export interface RegisterData {
     id: string
     username: string
   }
+  token: string
+  expiresIn: string
 }

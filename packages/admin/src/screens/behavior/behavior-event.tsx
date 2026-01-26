@@ -146,8 +146,10 @@ const BehaviorEvent: React.FC = () => {
   }
 
   // 处理日期范围变化
-  const handleDateRangeChange = (dates: [dayjs.Dayjs | null, dayjs.Dayjs | null]) => {
-    setDateRange(dates)
+  const handleDateRangeChange = (dates: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null) => {
+    if (dates && dates[0] && dates[1]) {
+      setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])
+    }
   }
 
   // 格式化时间戳
@@ -272,7 +274,7 @@ const BehaviorEvent: React.FC = () => {
           <Space>
             <RangePicker
               onChange={(dates, _dateStrings) =>
-                handleDateRangeChange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])
+                handleDateRangeChange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null] | null)
               }
               placeholder={['开始日期', '结束日期']}
               format="YYYY-MM-DD"

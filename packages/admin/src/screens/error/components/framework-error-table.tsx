@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
-import { Table, Button, Tag, Space, Drawer, Typography } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Table, Button, Tag, Space, Drawer, Typography, message, Spin } from 'antd'
 // 引入一个小图标，专门用来表示“代码/组件”
 import { CodeOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
+import { queryStatsData } from '../../../api/track'
 
 const { Text } = Typography
 
@@ -20,18 +21,48 @@ interface FrameworkErrorItem {
 const FrameworkErrorTable = () => {
   const [visible, setVisible] = useState(false)
   const [current, setCurrent] = useState<FrameworkErrorItem | null>(null)
+  const [dataSource, setDataSource] = useState<FrameworkErrorItem[]>([])
+  const [loading, setLoading] = useState(false)
 
-  // 2. 模拟假数据
-  const dataSource: FrameworkErrorItem[] = [
-    {
-      id: '1',
-      message: 'Error: Objects are not valid as a React child',
-      componentName: 'UserInfo', // 假设是 UserInfo 组件坏了
-      componentStack: '\n    in UserInfo (at App.tsx:24)\n    in div (at App.tsx:20)',
-      stack: 'Error: Objects are not valid as a React child...',
-      timestamp: '2023-12-11 14:20:00',
-    },
-  ]
+  useEffect(() => {
+    fetchFrameworkErrors()
+  }, [])
+
+  const fetchFrameworkErrors = async () => {
+    setLoading(true)
+    try {
+      const response = await queryStatsData({ type: 'framework_errors', page: 1, pageSize: 50 })
+      if (response.code === 200 && response.data) {
+        const { list } = response.data
+        // 处理后端返回的数据，转换为前端需要的格式
+        const processedData = list.map((item: any) => {
+          let extra = {}
+          try {
+            if (item.extra && typeof item.extra === 'string') {
+              extra = JSON.parse(item.extra)
+            }
+          } catch (e) {
+            console.error('解析 extra 字段失败:', e)
+          }
+
+          return {
+            id: item.id?.toString() || Math.random().toString(36).substr(2, 9),
+            message: item.message || '',
+            componentName: extra.componentName || 'Unknown',
+            componentStack: extra.componentStack || '',
+            stack: item.stack || extra.stack || '',
+            timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : '',
+          }
+        })
+        setDataSource(processedData)
+      }
+    } catch (error) {
+      console.error('获取框架错误数据失败:', error)
+      message.error('获取框架错误数据失败')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // 3. 表格列配置
   const columns: ColumnsType<FrameworkErrorItem> = [
@@ -78,7 +109,9 @@ const FrameworkErrorTable = () => {
   return (
     <>
       {/* 表格主体 */}
-      <Table rowKey="id" columns={columns} dataSource={dataSource} size="small" />
+      <Spin spinning={loading} tip="加载中...">
+        <Table rowKey="id" columns={columns} dataSource={dataSource} size="small" />
+      </Spin>
 
       {/* 侧边详情：这里和刚才不一样，这里有两块内容 */}
       <Drawer

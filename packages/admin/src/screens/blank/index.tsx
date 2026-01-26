@@ -1,3 +1,14 @@
-import BlankOverview from './blank-overview'
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
 
-export default BlankOverview
+const BlankScreen: React.FC = () => {
+  const navigate = useNavigate()
+
+  React.useEffect(() => {
+    navigate('/home/blank/analysis')
+  }, [navigate])
+
+  return null
+}
+
+export default BlankScreen
