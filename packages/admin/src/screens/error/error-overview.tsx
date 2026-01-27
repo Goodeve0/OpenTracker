@@ -25,6 +25,10 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import type { ErrorItem } from '../../types/error'
+import ChartWithAdd from '../../components/chart-with-add'
+import { ChartType } from '../../types'
+import { queryStatsData } from '../../api/track'
+import dayjs, { Dayjs } from 'dayjs'
 const { Content } = Layout
 const { Text } = Typography
 
@@ -35,17 +39,25 @@ const ErrorOverview = () => {
   const [drawerVisible, setDrawerVisible] = useState(false)
   const [currentDetail, setCurrentDetail] = useState<ErrorItem | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorData, setErrorData] = useState<any[]>([])
+  const [errorStats, setErrorStats] = useState({
+    total: 0,
+    userCount: 0,
+    crashRate: 0,
+    pendingIssues: 0,
+  })
+
   const formatErrorType = (type: string) => {
     const map: Record<string, string> = {
-      js: 'JS Error',
-      api: 'API Error',
+      js: 'JS错误',
+      api: 'API错误',
       cors: '跨域错误',
-      resource: '资源错误',
       framework: '框架错误',
-      behavior: '行为异常',
+      crash: '页面崩溃',
     }
     return map[type] || type
   }
+
   const columns = [
     {
       title: '错误摘要',
@@ -55,24 +67,28 @@ const ErrorOverview = () => {
     },
     {
       title: '类型',
-      dataIndex: 'type',
-      key: 'type',
+      dataIndex: 'errorType',
+      key: 'errorType',
       render: (type) => {
+        const formattedType = formatErrorType(type)
         let color = 'geekblue'
-        if (type === 'JS Error') color = 'volcano'
-        if (type === 'API Error') color = 'blue'
-        return <Tag color={color}>{type}</Tag>
+        if (formattedType === 'JS错误') color = 'volcano'
+        if (formattedType === 'API错误') color = 'blue'
+        if (formattedType === '跨域错误') color = 'green'
+        if (formattedType === '框架错误') color = 'orange'
+        if (formattedType === '页面崩溃') color = 'purple'
+        return <Tag color={color}>{formattedType}</Tag>
       },
     },
     {
       title: '报错页面',
-      dataIndex: 'page',
-      key: 'page',
+      dataIndex: 'pageUrl',
+      key: 'pageUrl',
     },
     {
       title: '最后发生时间',
-      dataIndex: 'time',
-      key: 'time',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
       width: 180,
     },
     {
@@ -102,126 +118,187 @@ const ErrorOverview = () => {
     },
   ]
 
-  const dataSource: ErrorItem[] = [
-    {
-      id: '1',
-      message: "Uncaught TypeError: Cannot read property 'id' of undefined",
-      type: 'js',
-      url: '/product/detail/1024',
-      timestamp: '2023-10-27 10:24:00',
-      status: 'unresolved',
-      userAgent: 'Mozilla/5.0...',
-    },
-    {
-      id: '2',
-      message: '502 Bad Gateway: /api/v1/user/profile',
-      type: 'api',
-      url: '/user/center',
-      timestamp: '2023-10-27 10:22:15',
-      status: 'unresolved',
-      userAgent: 'Mozilla/5.0...',
-    },
-    {
-      id: '3',
-      message: 'ChunkLoadError: Loading chunk 5 failed',
-      type: 'resource',
-      url: '/home',
-      timestamp: '2023-10-27 09:15:00',
-      status: 'resolved',
-      userAgent: 'Mozilla/5.0...',
-    },
-    {
-      id: '4',
-      message: 'Vue warn: Property "visible" was accessed during render',
-      type: 'framework',
-      url: '/settings',
-      timestamp: '2023-10-27 08:30:00',
-      status: 'unresolved',
-      userAgent: 'Mozilla/5.0...',
-    },
-    {
-      id: '5',
-      message: 'Network Error: timeout of 5000ms exceeded',
-      type: 'api',
-      url: '/payment',
-      timestamp: '2023-10-26 23:10:00',
-      status: 'unresolved',
-      userAgent: 'Mozilla/5.0...',
-    },
-  ]
   const showDetail = (record: any) => {
     setCurrentDetail(record)
     setDrawerVisible(true)
   }
-  useEffect(() => {
-    const chartDom = trendChartRef.current
-    const trendChart = echarts.init(chartDom)
-    const pieChart = echarts.init(pieChartRef.current)
-    const barChart = echarts.init(barChartRef.current)
-    const trendOption = {
+
+  const fetchErrorData = async (startTime?: number, endTime?: number) => {
+    setIsLoading(true)
+    try {
+      // 如果没有提供时间范围，默认查询最近24小时
+      const defaultStartTime = Date.now() - 24 * 60 * 60 * 1000
+      const actualStartTime = startTime || defaultStartTime
+      const actualEndTime = endTime || Date.now()
+
+      // 并行请求多个统计数据
+      const [errorTrends, errorTopN, highErrorPages, errorList] = await Promise.all([
+        queryStatsData({
+          type: 'error_trends',
+          startTime: actualStartTime,
+          endTime: actualEndTime,
+        }),
+        queryStatsData({
+          type: 'error_top_n',
+          startTime: actualStartTime,
+          endTime: actualEndTime,
+          limit: 5,
+        }),
+        queryStatsData({
+          type: 'high_error_pages',
+          startTime: actualStartTime,
+          endTime: actualEndTime,
+          limit: 5,
+        }),
+        queryStatsData({
+          type: 'error_list',
+          startTime: actualStartTime,
+          endTime: actualEndTime,
+          page: 1,
+          pageSize: 50,
+        }),
+      ])
+
+      // 处理错误列表数据
+      if (errorList.code === 200 && errorList.data) {
+        const { list, total } = errorList.data
+
+        const processedList = list.map((item: any) => {
+          try {
+            if (item.extra && typeof item.extra === 'string') {
+              item.extra = JSON.parse(item.extra)
+            }
+          } catch (e) {
+            console.error('解析 extra 字段失败:', e)
+          }
+          return item
+        })
+
+        setErrorData(processedList)
+
+        const userCount = new Set(processedList.map((item: any) => item.userAgent).filter(Boolean))
+          .size
+        const crashCount = processedList.filter((item: any) => {
+          const formattedType = formatErrorType(item.errorType)
+          return formattedType === '页面崩溃'
+        }).length
+        const crashRate = total > 0 ? (crashCount / total) * 100 : 0
+        const pendingIssues = processedList.filter((item: any) => item.status !== 'Resolved').length
+
+        setErrorStats({
+          total,
+          userCount,
+          crashRate,
+          pendingIssues,
+        })
+      }
+
+      // 更新图表数据
+      updateCharts(errorTrends, errorTopN, highErrorPages)
+    } catch (error) {
+      console.error('获取错误数据失败:', error)
+      message.error('获取错误数据失败')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  interface SeriesItem {
+    name: string
+    type: string
+    smooth: boolean
+    data: number[]
+    itemStyle: {
+      color: string
+    }
+  }
+
+  interface TrendData {
+    dates: string[]
+    series: SeriesItem[]
+  }
+
+  const updateCharts = (errorTrends: any, errorTopN: any, highErrorPages: any) => {
+    const trendChart = trendChartInstance.current
+    const pieChart = pieChartInstance.current
+    const barChart = barChartInstance.current
+
+    if (!trendChart || !pieChart || !barChart) return
+
+    // 处理错误趋势数据
+    let trendData: TrendData = {
+      dates: [],
+      series: [],
+    }
+
+    if (errorTrends.code === 200 && errorTrends.data) {
+      trendData = errorTrends.data as TrendData
+    }
+
+    // 处理错误类型分布数据
+    let pieData: { name: string; value: number }[] = []
+
+    if (errorTopN.code === 200 && errorTopN.data) {
+      // 确保数据格式符合 ECharts 饼图要求
+      pieData = errorTopN.data
+        .map((item: any) => {
+          // 转换为 ECharts 饼图所需的格式 {name: string, value: number}
+          if (item.name && item.count !== undefined) {
+            return { name: item.name, value: item.count }
+          }
+          // 如果数据格式不符合要求，返回默认值
+          return { name: '未知', value: 0 }
+        })
+        .filter((item: any) => item.value > 0)
+    }
+
+    // 处理高频报错页面数据
+    let topPages: { name: string; count: number }[] = []
+
+    if (highErrorPages.code === 200 && highErrorPages.data) {
+      topPages = highErrorPages.data
+    }
+
+    // 更新趋势图
+    trendChart.setOption({
       tooltip: { trigger: 'axis' },
-      legend: { data: ['JS错误', 'API错误', '资源错误', '框架错误', '页面崩溃'], top: '0%' },
+      legend: { data: trendData.series.map((s) => s.name), top: '0%' },
       grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:00'],
+        data: trendData.dates,
+        axisLabel: {
+          interval: 2,
+          rotate: 60,
+          formatter: function (value: string) {
+            return value.replace('T', '\n')
+          },
+        },
       },
-      yAxis: { type: 'value' },
-      series: [
-        {
-          name: 'JS错误',
-          type: 'line',
-          smooth: true,
-          data: [120, 132, 101, 134, 90, 230, 210],
-          itemStyle: { color: '#cf1322' },
+      yAxis: {
+        type: 'value',
+        min: 0,
+        max: 500,
+        interval: 100,
+        axisLabel: {
+          formatter: '{value}',
         },
-        {
-          name: 'API错误',
-          type: 'line',
-          smooth: true,
-          data: [220, 182, 191, 234, 290, 330, 310],
-          itemStyle: { color: '#1890ff' },
-        },
-        {
-          name: '资源错误',
-          type: 'line',
-          smooth: true,
-          data: [150, 232, 201, 154, 190, 330, 410],
-          itemStyle: { color: '#faad14' },
-        },
-        {
-          name: '框架错误',
-          type: 'line',
-          smooth: true,
-          data: [30, 42, 21, 54, 60, 80, 40],
-          itemStyle: { color: '#722ed1' },
-        },
-        {
-          name: '页面崩溃',
-          type: 'line',
-          smooth: true,
-          data: [2, 5, 1, 8, 3, 0, 2],
-          itemStyle: { color: '#eb2f96' },
-        },
-      ],
-    }
-    const pieOption = {
+      },
+      series: trendData.series,
+    })
+
+    // 更新饼图
+    pieChart.setOption({
       tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
       legend: { orient: 'vertical', left: 'left' },
       series: [
         {
-          names: '错误类型',
+          name: '错误类型',
           type: 'pie',
           radius: '50%',
           label: { show: true, formatter: '{b}', fontSize: 12 },
-          data: [
-            { value: 1048, name: 'JS错误' },
-            { value: 735, name: 'API错误' },
-            { value: 580, name: '资源错误' },
-            { value: 484, name: '框架错误' },
-            { value: 300, name: '页面崩溃' },
-          ],
+          data: pieData,
           emphasis: {
             itemStyle: {
               shadowBlur: 10,
@@ -231,89 +308,160 @@ const ErrorOverview = () => {
           },
         },
       ],
-    }
-    const barOption = {
-      tooltip: { trigger: 'axios', axiosPointer: { type: 'shadow' } },
+    })
+
+    // 更新柱状图
+    barChart.setOption({
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
       grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
       xAxis: { type: 'value', boundaryGap: [0, 0.01] },
       yAxis: {
         type: 'category',
-        data: ['/home', '/login', '/product/detail', '/cart', '/payment'],
+        data: topPages.map((item: any) => item.name),
         axisLabel: { interval: 0, width: 80, overflow: 'truncate' },
       },
       series: [
         {
           name: '报错次数',
           type: 'bar',
-          data: [18203, 23489, 29034, 104970, 131744],
-          itemStyle: { color: '#597ef7' }, // 柱子颜色
+          data: topPages.map((item: any) => item.count),
+          itemStyle: { color: '#597ef7' },
         },
       ],
+    })
+  }
+
+  // 使用 useRef 存储 ECharts 实例，避免重复初始化
+  const trendChartInstance = useRef<echarts.ECharts | null>(null)
+  const pieChartInstance = useRef<echarts.ECharts | null>(null)
+  const barChartInstance = useRef<echarts.ECharts | null>(null)
+
+  useEffect(() => {
+    const chartDom = trendChartRef.current
+    const pieChartDom = pieChartRef.current
+    const barChartDom = barChartRef.current
+
+    // 确保容器存在
+    if (!chartDom || !pieChartDom || !barChartDom) return
+
+    // 清理之前的实例
+    if (trendChartInstance.current) {
+      trendChartInstance.current.dispose()
     }
-    trendChart.setOption(trendOption)
-    pieChart.setOption(pieOption)
-    barChart.setOption(barOption)
+    if (pieChartInstance.current) {
+      pieChartInstance.current.dispose()
+    }
+    if (barChartInstance.current) {
+      barChartInstance.current.dispose()
+    }
+
+    // 初始化新实例
+    const trendChart = echarts.init(chartDom)
+    const pieChart = echarts.init(pieChartDom)
+    const barChart = echarts.init(barChartDom)
+
+    // 存储实例到 useRef
+    trendChartInstance.current = trendChart
+    pieChartInstance.current = pieChart
+    barChartInstance.current = barChart
+
+    // 立即调整图表大小，确保使用正确的容器尺寸
+    trendChart.resize()
+    pieChart.resize()
+    barChart.resize()
+
+    // 使用与 updateCharts 函数中一致的配置，确保第一次渲染时不会溢出
+    const emptyOption = {
+      tooltip: { trigger: 'axis' },
+      legend: { top: '0%' },
+      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: [],
+        axisLabel: {
+          interval: 2,
+          rotate: 60,
+          formatter: function (value: string) {
+            return value.replace('T', '\n')
+          },
+        },
+      },
+      yAxis: {
+        type: 'value',
+        min: 0,
+        max: 500,
+        interval: 100,
+        axisLabel: {
+          formatter: '{value}',
+        },
+      },
+      series: [],
+    }
+
+    trendChart.setOption(emptyOption)
+    pieChart.setOption({
+      tooltip: { trigger: 'item' },
+      legend: { orient: 'vertical', left: 'left' },
+      series: [{ type: 'pie', data: [] }],
+    })
+    barChart.setOption({
+      tooltip: { trigger: 'axis' },
+      grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+      xAxis: { type: 'value' },
+      yAxis: { type: 'category', data: [] },
+      series: [{ type: 'bar', data: [] }],
+    })
+
     const handleResize = () => {
       trendChart.resize()
       pieChart.resize()
       barChart.resize()
     }
+
     window.addEventListener('resize', handleResize)
+
+    // 延迟执行数据请求，确保容器大小已经完全计算好
+    setTimeout(() => {
+      fetchErrorData()
+      // 数据加载后再次调整大小
+      setTimeout(() => {
+        trendChart.resize()
+        pieChart.resize()
+        barChart.resize()
+      }, 100)
+    }, 200)
 
     return () => {
       window.removeEventListener('resize', handleResize)
       trendChart.dispose()
       pieChart.dispose()
       barChart.dispose()
+      trendChartInstance.current = null
+      pieChartInstance.current = null
+      barChartInstance.current = null
     }
   }, [])
-  const handleRefresh = () => {
-    setIsLoading(true)
-    // 加上 as HTMLDivElement
-    const trendChart = echarts.getInstanceByDom(trendChartRef.current as unknown as HTMLDivElement)
-    const pieChart = echarts.getInstanceByDom(pieChartRef.current as unknown as HTMLDivElement)
-    const barChart = echarts.getInstanceByDom(barChartRef.current as unknown as HTMLDivElement)
-    trendChart?.showLoading()
-    pieChart?.showLoading()
-    barChart?.showLoading()
-    setTimeout(() => {
-      // --- A. 生成随机数据 (模拟后端返回) ---
-      const randomData = Array.from({ length: 7 }, () => Math.floor(Math.random() * 500))
-      const randomPieData = [
-        { value: Math.floor(Math.random() * 1000), name: 'JS错误' },
-        { value: Math.floor(Math.random() * 1000), name: 'API错误' },
-        { value: Math.floor(Math.random() * 500), name: '资源错误' },
-        { value: Math.floor(Math.random() * 500), name: '框架错误' },
-        { value: Math.floor(Math.random() * 200), name: '页面崩溃' },
-      ]
 
-      // --- B. 更新图表数据 (setOption 会自动合并数据，只需传入变化的部分) ---
-      trendChart?.setOption({
-        series: [{ data: randomData }], // 只更新第一条线的数，这里偷懒演示一下
-      })
+  const handleRefresh = (
+    dates: [Dayjs | null, Dayjs | null] | null,
+    dateStrings?: [string, string]
+  ) => {
+    let startTime: number | undefined
+    let endTime: number | undefined
 
-      pieChart?.setOption({
-        series: [{ data: randomPieData }],
-      })
+    if (dates && Array.isArray(dates) && dates.length === 2) {
+      startTime = dates[0].valueOf()
+      endTime = dates[1].valueOf()
+    }
 
-      // 柱状图也随机一下
-      barChart?.setOption({
-        series: [{ data: Array.from({ length: 5 }, () => Math.floor(Math.random() * 100000)) }],
-      })
-      trendChart?.resize()
-      pieChart?.resize()
-      barChart?.resize()
-      // 5. 关闭 Loading
-      trendChart?.hideLoading()
-      pieChart?.hideLoading()
-      barChart?.hideLoading()
-
-      setIsLoading(false)
-
-      // 6. 弹出成功提示
-      message.success('数据已更新到最新状态')
-    }, 1500)
+    fetchErrorData(startTime, endTime)
   }
+
+  const handleButtonClick = () => {
+    handleRefresh()
+  }
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Content style={{ padding: '24px' }}>
@@ -329,7 +477,7 @@ const ErrorOverview = () => {
                 <Button
                   type="primary"
                   icon={<ReloadOutlined />}
-                  onClick={handleRefresh}
+                  onClick={() => handleRefresh([dayjs().subtract(7, 'day'), dayjs()])}
                   loading={isLoading}
                 >
                   刷新
@@ -344,12 +492,9 @@ const ErrorOverview = () => {
               <Card hoverable>
                 <Statistic
                   title="今日错误总数"
-                  value={1024}
+                  value={errorStats.total}
                   valueStyle={{ color: '#cf1322' }}
                   prefix={<BugOutlined />}
-                  suffix={
-                    <span style={{ fontSize: '12px', color: '#999', marginLeft: '4px' }}>+15%</span>
-                  }
                 />
               </Card>
             </Col>
@@ -357,7 +502,7 @@ const ErrorOverview = () => {
               <Card hoverable>
                 <Statistic
                   title="影响用户数 (UV)"
-                  value={342}
+                  value={errorStats.userCount}
                   valueStyle={{ color: '#1890ff' }}
                   prefix={<UserOutlined />}
                 />
@@ -367,7 +512,7 @@ const ErrorOverview = () => {
               <Card hoverable>
                 <Statistic
                   title="页面崩溃率"
-                  value={0.12}
+                  value={errorStats.crashRate}
                   precision={2}
                   suffix="%"
                   valueStyle={{ color: '#faad14' }}
@@ -379,7 +524,7 @@ const ErrorOverview = () => {
               <Card hoverable>
                 <Statistic
                   title="待修复 Issue"
-                  value={15}
+                  value={errorStats.pendingIssues}
                   valueStyle={{ color: '#52c41a' }}
                   prefix={<CheckCircleOutlined />}
                 />
@@ -388,27 +533,53 @@ const ErrorOverview = () => {
           </Row>
           <Row gutter={16}>
             <Col span={24}>
-              <Card title="错误趋势分析 (24h)">
-                <div ref={trendChartRef} style={{ height: '350px', width: '100%' }}></div>
-              </Card>
+              <ChartWithAdd
+                chartType={ChartType.ERROR_TRENDS}
+                title="错误趋势分析 (24h)"
+                description="展示24小时内的错误变化趋势"
+                category="错误分析"
+                defaultSize="large"
+              >
+                <div
+                  ref={trendChartRef}
+                  style={{ height: '350px', width: '100%', overflow: 'hidden' }}
+                ></div>
+              </ChartWithAdd>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Card title="错误类型分布">
+              <ChartWithAdd
+                chartType={ChartType.ERROR_TYPE}
+                title="错误类型分布"
+                description="展示各类错误的分布情况"
+                category="错误分析"
+                defaultSize="medium"
+              >
                 <div ref={pieChartRef} style={{ height: '300px', width: '100%' }}></div>
-              </Card>
+              </ChartWithAdd>
             </Col>
             <Col span={12}>
-              <Card title="高频报错页面 Top 5">
+              <ChartWithAdd
+                chartType={ChartType.HIGH_ERROR_PAGES}
+                title="高频报错页面 Top 5"
+                description="展示报错次数最多的前5个页面"
+                category="错误分析"
+                defaultSize="medium"
+              >
                 <div ref={barChartRef} style={{ height: '300px', width: '100%' }}></div>
-              </Card>
+              </ChartWithAdd>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={24}>
               <Card title="最新错误列表" extra={<Button type="link">查看全部日志</Button>}>
-                <Table columns={columns} dataSource={dataSource} pagination={{ pageSize: 5 }} />
+                <Table
+                  columns={columns}
+                  dataSource={errorData}
+                  pagination={{ pageSize: 5 }}
+                  rowKey="id"
+                />
               </Card>
             </Col>
           </Row>
@@ -429,7 +600,7 @@ const ErrorOverview = () => {
                 <Text type="danger">{currentDetail.message}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="错误类型">
-                <Tag color="red">{currentDetail.type}</Tag>
+                <Tag color="red">{currentDetail.errorType}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="发生时间">{currentDetail.timestamp}</Descriptions.Item>
               <Descriptions.Item label="报错页面">{currentDetail.url}</Descriptions.Item>
@@ -437,8 +608,8 @@ const ErrorOverview = () => {
 
             {/* 2. 设备环境 */}
             <Descriptions title="设备环境" bordered size="small" column={2}>
-              <Descriptions.Item label="浏览器">Chrome 118.0</Descriptions.Item>
-              <Descriptions.Item label="系统">Windows 10</Descriptions.Item>
+              <Descriptions.Item label="浏览器">{currentDetail.userAgent}</Descriptions.Item>
+              <Descriptions.Item label="系统">未知</Descriptions.Item>
             </Descriptions>
 
             {/* 3. 错误堆栈 */}
@@ -456,15 +627,8 @@ const ErrorOverview = () => {
                   overflowY: 'auto',
                 }}
               >
-                <Text
-                  type="secondary"
-                  copyable={{ text: "TypeError: Cannot read property 'id'..." }}
-                >
-                  TypeError: Cannot read property 'id' of undefined
-                  <br />
-                  &nbsp;&nbsp;at handleButtonClick (main.js:1234:25)
-                  <br />
-                  &nbsp;&nbsp;at HTMLUnknownElement.callCallback (vendors.js:4567:14)
+                <Text type="secondary" copyable={{ text: currentDetail.stack || '无堆栈信息' }}>
+                  {currentDetail.stack || '无堆栈信息'}
                 </Text>
               </div>
             </div>

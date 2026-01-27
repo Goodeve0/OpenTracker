@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Spin, Empty, DatePicker, Select } from 'antd'
 import { AreaChartOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'
+import ChartWithAdd from '../../components/chart-with-add'
+import { ChartType } from '../../types'
 import dayjs from 'dayjs'
 import { Line } from '@ant-design/charts'
+import { queryStatsData } from '../../api/track'
 
 const { RangePicker } = DatePicker
 const { Option } = Select
@@ -42,134 +45,78 @@ const CustomerGrowth: React.FC = () => {
   ])
   const [period, setPeriod] = useState<string>('daily') // daily, weekly, monthly
 
-  // 生成日期数组
-  const generateDateArray = (days: number): string[] => {
-    const dates: string[] = []
-    const end = new Date()
-    const start = new Date(end)
-    start.setDate(start.getDate() - days + 1)
-
-    let current = start
-    while (current <= end) {
-      dates.push(dayjs(current).format('YYYY-MM-DD'))
-      current.setDate(current.getDate() + 1)
-    }
-    return dates
-  }
-
-  // 从 localStorage 获取行为数据
-  const getBehaviorsFromLocalStorage = (): any[] => {
-    try {
-      const behaviors = localStorage.getItem('behaviors')
-      return behaviors ? JSON.parse(behaviors) : []
-    } catch (error) {
-      console.error('从 localStorage 获取行为数据失败:', error)
-      return []
-    }
-  }
-
   // 获取客户增长数据
   const fetchGrowthData = async () => {
+    console.log('开始获取客户增长数据')
     setLoading(true)
     setError(null)
     try {
-      // 从 localStorage 获取行为数据
-      const behaviors = getBehaviorsFromLocalStorage()
+      // 直接使用固定的时间范围，确保能够获取到后端数据
+      const startDate = dayjs('2024-12-26')
+      const endDate = dayjs('2025-01-24')
 
-      // 根据时间范围生成数据
-      let days = 30
-      let startDate: Date
-      let endDate = new Date()
+      console.log('时间范围:', {
+        start: startDate.format('YYYY-MM-DD'),
+        end: endDate.format('YYYY-MM-DD'),
+      })
 
-      switch (timeRange) {
-        case '7d':
-          days = 7
-          startDate = new Date()
-          startDate.setDate(startDate.getDate() - 7)
-          break
-        case '30d':
-          days = 30
-          startDate = new Date()
-          startDate.setDate(startDate.getDate() - 30)
-          break
-        case '90d':
-          days = 90
-          startDate = new Date()
-          startDate.setDate(startDate.getDate() - 90)
-          break
-        case 'custom':
-          if (customDateRange[0] && customDateRange[1]) {
-            startDate = customDateRange[0].toDate()
-            endDate = customDateRange[1].toDate()
-            days = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-          } else {
-            days = 30
-            startDate = new Date()
-            startDate.setDate(startDate.getDate() - 30)
-          }
-          break
-        default:
-          days = 30
-          startDate = new Date()
-          startDate.setDate(startDate.getDate() - 30)
+      // 从API获取客户增长数据
+      console.log('调用queryStatsData API')
+      const response = await queryStatsData({
+        type: 'customerGrowth',
+        startTime: startDate.startOf('day').valueOf(),
+        endTime: endDate.endOf('day').valueOf(),
+        limit: endDate.diff(startDate, 'day') + 1,
+      })
+
+      console.log('API响应:', response)
+
+      if (response && response.code === 200 && response.data) {
+        // 处理后端返回的数据
+        console.log('客户增长数据:', response.data)
+        const growthData: CustomerGrowthData[] = response.data.map((item: any) => ({
+          date: dayjs(item.timestamp).format('YYYY-MM-DD'),
+          newUsers: typeof item.newUsers === 'number' ? item.newUsers : 0,
+          activeUsers: typeof item.activeUsers === 'number' ? item.activeUsers : 0,
+          totalUsers: typeof item.totalUsers === 'number' ? item.totalUsers : 0,
+        }))
+
+        // 转换数据格式以适应@ant-design/plots Line组件，使用中文图例
+        const convertedChartData = growthData.flatMap((item) => [
+          { date: item.date, type: '新增用户', value: item.newUsers },
+          { date: item.date, type: '活跃用户', value: item.activeUsers },
+          { date: item.date, type: '累计用户', value: item.totalUsers },
+        ])
+
+        console.log('处理后的图表数据:', convertedChartData)
+        console.log('数据长度:', growthData.length)
+
+        setData(growthData)
+        setChartData(convertedChartData)
+      } else {
+        console.error('获取客户增长数据失败:', response?.message || '未知错误')
+        setError('获取客户增长数据失败')
+        setData([])
+        setChartData([])
       }
-
-      // 生成日期数组
-      const dates = generateDateArray(days)
-
-      // 按日期分组统计行为数据
-      const groupedByDate: Record<string, any[]> = {}
-      dates.forEach((date) => {
-        groupedByDate[date] = []
-      })
-
-      behaviors.forEach((behavior: any) => {
-        const date = dayjs(behavior.timestamp).format('YYYY-MM-DD')
-        if (groupedByDate[date]) {
-          groupedByDate[date].push(behavior)
-        }
-      })
-
-      // 计算增长数据
-      let totalUsers = 0
-      const growthData: CustomerGrowthData[] = dates.map((date) => {
-        // 使用行为数据数量作为活跃用户数
-        const activeUsers = groupedByDate[date].length
-        // 简化处理，使用活跃用户数作为新增用户数
-        const newUsers = activeUsers
-        // 累计用户数
-        totalUsers += newUsers
-
-        return {
-          date,
-          newUsers,
-          activeUsers,
-          totalUsers,
-        }
-      })
-
-      // 转换数据格式以适应@ant-design/plots Line组件，使用中文图例
-      const convertedChartData = growthData.flatMap((item) => [
-        { date: item.date, type: '新增用户', value: item.newUsers },
-        { date: item.date, type: '活跃用户', value: item.activeUsers },
-        { date: item.date, type: '累计用户', value: item.totalUsers },
-      ])
-
-      // 确认数据类型正确
-      console.log('数据类型:', [...new Set(convertedChartData.map((item) => item.type))])
-      console.log('数据示例:', convertedChartData.slice(0, 3))
-
-      setData(growthData)
-      setChartData(convertedChartData)
     } catch (err) {
+      console.error('获取客户增长数据异常:', err)
       setError('获取客户增长数据失败')
-      console.error('获取客户增长数据失败:', err)
+      setData([])
+      setChartData([])
     } finally {
+      console.log('获取客户增长数据完成')
       setLoading(false)
     }
   }
 
   // 初始加载数据
+  useEffect(() => {
+    // 直接调用fetchGrowthData获取数据
+    fetchGrowthData()
+  }, [])
+
+  // 当时间范围变化时重新加载数据
   useEffect(() => {
     fetchGrowthData()
   }, [timeRange, customDateRange, period])
@@ -206,43 +153,15 @@ const CustomerGrowth: React.FC = () => {
   const growthTrend = calculateGrowthTrend()
 
   return (
-    <Card
-      title={
-        <div className="flex items-center gap-2">
-          <AreaChartOutlined />
-          <span>客户增长趋势</span>
-        </div>
-      }
-      extra={
-        <div className="flex items-center gap-2">
-          <Select value={timeRange} onChange={handleTimeRangeChange} style={{ width: 120 }}>
-            {timeRangeOptions.map((option) => (
-              <Option key={option.value} value={option.value}>
-                {option.label}
-              </Option>
-            ))}
-          </Select>
-
-          {timeRange === 'custom' && (
-            <RangePicker
-              onChange={(dates, dateStrings) =>
-                handleCustomDateRangeChange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])
-              }
-              placeholder={['开始日期', '结束日期']}
-              format="YYYY-MM-DD"
-              style={{ width: 240 }}
-            />
-          )}
-
-          <Select value={period} onChange={setPeriod} style={{ width: 100 }}>
-            <Option value="daily">日</Option>
-            <Option value="weekly">周</Option>
-            <Option value="monthly">月</Option>
-          </Select>
-        </div>
-      }
-    >
-      <Spin spinning={loading} tip="加载客户增长数据中...">
+    <div className="customer-growth-page" style={{ padding: '20px' }}>
+      <ChartWithAdd
+        chartType={ChartType.CUSTOMER_GROWTH}
+        title="客户增长趋势"
+        description="展示新增用户、活跃用户和累计用户的变化趋势"
+        category="获客分析"
+        defaultSize="large"
+        loading={loading}
+      >
         {error ? (
           <div className="text-center text-red-500 py-10">
             <p>{error}</p>
@@ -299,7 +218,6 @@ const CustomerGrowth: React.FC = () => {
                 yField="value"
                 seriesField="type"
                 smooth
-                // 配置每个系列的颜色
                 series={[
                   {
                     name: '新增用户',
@@ -381,8 +299,8 @@ const CustomerGrowth: React.FC = () => {
             style={{ margin: '40px 0' }}
           />
         )}
-      </Spin>
-    </Card>
+      </ChartWithAdd>
+    </div>
   )
 }
 

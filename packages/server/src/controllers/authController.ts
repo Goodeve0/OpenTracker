@@ -10,10 +10,11 @@ class AuthController {
     // 绑定方法到当前实例
     this.register = this.register.bind(this)
     this.login = this.login.bind(this)
+    this.changePassword = this.changePassword.bind(this)
   }
   // 用户注册
   async register(ctx: Context): Promise<void> {
-    const { username, password } = ctx.request.body as IRegisterRequest
+    const { username, password } = ctx.request.body as { username: string; password: string }
 
     console.log('注册请求:', { username, password: '***' })
 
@@ -43,7 +44,7 @@ class AuthController {
       })
       if (existingUser) {
         ctx.status = 409
-        ctx.body = this.createResponse(409, '用户已存在')
+        ctx.body = this.createResponse(409, '用户名已存在')
         return
       }
 
@@ -64,6 +65,7 @@ class AuthController {
       const tokenPayload: TokenPayload = {
         userId: user.id.toString(),
         username: user.username || '',
+        name: user.name || undefined,
       }
       const token = JWTUtil.generateToken(tokenPayload)
 
@@ -72,6 +74,9 @@ class AuthController {
         user: {
           id: user.id.toString(),
           username: user.username || '',
+          name: user.name || undefined,
+          email: user.email || undefined,
+          phone: user.telephone_number?.toString(),
         },
         token,
         expiresIn: '7d',
@@ -122,6 +127,7 @@ class AuthController {
       const tokenPayload: TokenPayload = {
         userId: user.id.toString(),
         username: user.username || '',
+        name: user.name || undefined,
       }
       const token = JWTUtil.generateToken(tokenPayload)
 
@@ -130,6 +136,9 @@ class AuthController {
         user: {
           id: user.id.toString(),
           username: user.username || '',
+          name: user.name || undefined,
+          email: user.email || undefined,
+          phone: user.telephone_number?.toString(),
         },
         token,
         expiresIn: '7d',
@@ -138,6 +147,70 @@ class AuthController {
       ctx.body = this.createResponse(200, '登录成功', responseData)
     } catch (error) {
       console.error('登录错误:', error)
+      ctx.status = 500
+      ctx.body = this.createResponse(500, '服务器内部错误')
+    }
+  }
+
+  // 修改密码
+  async changePassword(ctx: Context): Promise<void> {
+    const userInfo = ctx.state.user
+    const { currentPassword, newPassword } = ctx.request.body as {
+      currentPassword: string
+      newPassword: string
+    }
+
+    console.log('修改密码请求:', { userId: userInfo.userId, password: '***' })
+
+    // 数据验证
+    if (!currentPassword || !newPassword) {
+      ctx.status = 400
+      ctx.body = this.createResponse(400, '当前密码和新密码为必填项')
+      return
+    }
+
+    if (!validatePassword(newPassword)) {
+      ctx.status = 400
+      ctx.body = this.createResponse(400, '密码必须至少6位')
+      return
+    }
+
+    try {
+      // 查找用户
+      const user = await prisma.users.findUnique({
+        where: { id: parseInt(userInfo.userId) },
+      })
+      if (!user) {
+        ctx.status = 404
+        ctx.body = this.createResponse(404, '用户不存在')
+        return
+      }
+
+      // 验证当前密码
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password || '')
+      if (!isValidPassword) {
+        ctx.status = 401
+        ctx.body = this.createResponse(401, '当前密码错误')
+        return
+      }
+
+      // 加密新密码
+      const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+      // 更新密码
+      await prisma.users.update({
+        where: { id: user.id },
+        data: {
+          password: hashedPassword,
+          updatedAt: new Date(),
+        },
+      })
+
+      console.log('用户密码修改成功:', user.username, '用户ID:', user.id)
+
+      ctx.body = this.createResponse(200, '密码修改成功')
+    } catch (error) {
+      console.error('修改密码错误:', error)
       ctx.status = 500
       ctx.body = this.createResponse(500, '服务器内部错误')
     }

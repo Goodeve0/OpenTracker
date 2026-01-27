@@ -18,3 +18,6 @@ export interface RegisterParams {
   password: string
   role?: 'admin' | 'user'
 }
+
+// 导入并导出仪表板相关类型
+export * from './dashboard'

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import type { MenuProps } from 'antd'
 import { Layout, Menu } from 'antd'
 import {
@@ -75,10 +75,7 @@ const subItems: MenuItem[] = [
     key: 'sub7',
     icon: <TabletOutlined />,
     label: '白屏监控',
-    children: [
-      { key: 'sub71', label: '白屏分析' },
-      { key: 'sub72', label: '白屏列表' },
-    ],
+    children: [{ key: 'sub71', label: '白屏分析' }],
   },
 ]
 
@@ -87,13 +84,53 @@ const SiderComponent: React.FC<SiderComponentProps> = ({
   onMenuClick,
   colorBgContainer,
 }) => {
+  // 初始openKeys，根据currentKey计算
+  const getInitialOpenKeys = () => {
+    if (currentKey.length === 4) {
+      return [currentKey.substring(0, 3)]
+    }
+    return ['sub1']
+  }
+
+  // 从localStorage获取初始openKeys
+  const getOpenKeysFromStorage = () => {
+    const stored = localStorage.getItem('sidebar_openKeys')
+    if (stored) {
+      return JSON.parse(stored)
+    }
+    return getInitialOpenKeys()
+  }
+
+  // 添加openKeys状态管理，从localStorage恢复
+  const [openKeys, setOpenKeys] = useState<string[]>(getOpenKeysFromStorage())
+
+  // 当currentKey变化时，更新openKeys
+  useEffect(() => {
+    if (currentKey.length === 4) {
+      const parentKey = currentKey.substring(0, 3)
+      // 如果当前父菜单不在openKeys中，则添加
+      if (!openKeys.includes(parentKey)) {
+        const newOpenKeys = [...openKeys, parentKey]
+        setOpenKeys(newOpenKeys)
+        localStorage.setItem('sidebar_openKeys', JSON.stringify(newOpenKeys))
+      }
+    }
+  }, [currentKey])
+
+  // 处理菜单展开/折叠事件，并保存到localStorage
+  const onOpenChange: MenuProps['onOpenChange'] = (keys) => {
+    setOpenKeys(keys)
+    localStorage.setItem('sidebar_openKeys', JSON.stringify(keys))
+  }
+
   return (
     <Sider style={{ background: colorBgContainer, width: 200, flexShrink: 0 }}>
       <Menu
         mode="inline"
         onClick={onMenuClick}
         selectedKeys={[currentKey]}
-        defaultOpenKeys={['sub1']}
+        openKeys={openKeys}
+        onOpenChange={onOpenChange}
         style={{ height: '100%' }}
         items={subItems}
       />

@@ -3,7 +3,7 @@ import { Form, Input, Button, Alert } from 'antd'
 import type { Rule } from 'antd/es/form'
 import { useNavigate } from 'react-router-dom'
 import { authAPI } from '@/api/auth'
-import { setToken } from '@/utils/token'
+import { setToken, generateToken } from '@/utils/token'
 
 const Login = () => {
   // 导航钩子
@@ -44,13 +44,26 @@ const Login = () => {
       if (response.code === 200) {
         // 登录成功：保存token并跳转
         const { user } = response.data
-        const tokenData = { id: user.id, username: user.login }
-        setToken(JSON.stringify(tokenData))
+        // 从响应中获取真实的token
+        const token = response.data.token
+        if (token) {
+          setToken(token)
+        } else {
+          // 如果服务器没有返回token，使用generateToken生成
+          // 使用正确的字段名和类型
+          setToken(
+            generateToken({
+              id: parseInt(user.id),
+              username: user.login || user.username,
+              role: 'user', // 添加默认角色
+            })
+          )
+        }
         setSuccessMsg('登录成功！即将跳转首页')
 
         setTimeout(() => {
-          // 登录成功后跳转到主页
-          navigate('/home')
+          // 登录成功后跳转到报表面板
+          navigate('/home/dashboard')
         }, 2000)
       } else {
         // 登录失败

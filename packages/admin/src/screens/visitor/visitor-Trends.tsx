@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Row, Col, Statistic, Tooltip, Spin, DatePicker, Select, ConfigProvider } from 'antd'
 import { ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import ChartWithAdd from '../../components/chart-with-add'
+import { ChartType } from '../../types'
 import dayjs from 'dayjs'
 import { visitorAPI, VisitorDataPoint, OverviewData } from '../../api/visitor'
 
@@ -449,11 +451,16 @@ const VisitorTrends: React.FC = () => {
         </div>
 
         {/* 访客趋势图 */}
-        <Card style={{ marginBottom: 24 }}>
-          <Spin spinning={loading}>
-            <LineChart data={visitorData} width={800} height={300} viewType={viewType} />
-          </Spin>
-        </Card>
+        <ChartWithAdd
+          chartType={ChartType.VISITOR_TRENDS}
+          title="访客趋势图"
+          description="展示网站访客数量和浏览量的变化趋势"
+          category="访客分析"
+          defaultSize="large"
+          loading={loading}
+        >
+          <LineChart data={visitorData} width={800} height={300} viewType={viewType} />
+        </ChartWithAdd>
 
         {/* 访客概览 */}
         <h3 style={{ marginBottom: 16 }}>访客概览</h3>
