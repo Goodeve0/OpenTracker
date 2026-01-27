@@ -11,7 +11,7 @@ import {
 import { PluginManager } from './plugin/plugin-manager.js'
 import { PluginContext } from './plugin/types.js'
 //引入沙箱相关内容
-import { getTrackerView, destroyTrackerView } from './sandbox/index.js'
+import { ProxySandbox } from './sandbox/index.js'
 export class LifecycleManager {
   private hooks: Map<LifecycleHook, LifecycleHookFunction[]> = new Map()
   private config: LifecycleManagerConfig
@@ -371,7 +371,10 @@ export const destroyTracker = async (): Promise<void> => {
     tracker: globalTrackerInstance,
     config: { ...globalTrackerInstance.getConfig() },
   }
-
+  if (globalSandboxInstance) {
+    globalSandboxInstance.destroy()
+    globalSandboxInstance = null
+  }
   // 触发销毁前钩子
   await globalTrackerInstance
     .getLifecycleManager()
@@ -379,11 +382,9 @@ export const destroyTracker = async (): Promise<void> => {
 
   // 触发销毁完成钩子
   await globalTrackerInstance.getLifecycleManager().trigger(LifecycleHook.DESTROY, destroyContext)
-
   // 清除全局实例
   globalTrackerInstance = null
   Tracker.clearInstance()
-  destroyTrackerView()
   console.log('[Tracker] SDK已销毁')
 }
 
@@ -391,13 +392,26 @@ export default Tracker
 
 // 全局Tracker实例引用
 let globalTrackerInstance: Tracker | null = null
+let globalSandboxInstance: ProxySandbox | null = null
 
 // 初始化全局Tracker实例方法
 export const initTracker = (config: TrackerConfig): Tracker => {
-  globalTrackerInstance = Tracker.getInstance(config)
+  // 如果已经有全局实例，直接返回
+  if (globalTrackerInstance) {
+    console.warn('[Tracker] SDK已经初始化，返回现有实例')
+    return globalTrackerInstance
+  }
+
+  // 通过 Tracker.getInstance 创建核心实例
+  const coreTracker = Tracker.getInstance(config)
+
+  // 创建沙箱包装 - 传入原始 Tracker 实例而不是 config
+  globalSandboxInstance = new ProxySandbox(coreTracker)
+  globalTrackerInstance = globalSandboxInstance.getProxy()
+
+  console.log('[Tracker] SDK初始化完成（沙箱模式）')
   return globalTrackerInstance
 }
-
 // 获取全局Tracker实例方法
 export const getTracker = (): Tracker => {
   if (!globalTrackerInstance) {
@@ -408,7 +422,7 @@ export const getTracker = (): Tracker => {
 
 // 性能数据自动上报方法
 export const reportPerformance = async (data: Record<string, number>): Promise<void> => {
-  const tracker = getTrackerView(getTracker().getConfig())
+  const tracker = getTracker()
   await tracker.report('performance', data)
 }
 
@@ -418,7 +432,7 @@ export const reportBehavior = async (
   data: Record<string, any>,
   immediate = type === 'pv'
 ): Promise<void> => {
-  const tracker = getTrackerView(getTracker().getConfig())
+  const tracker = getTracker()
   await tracker.report('behavior', { ...data, eventName: `behavior_${type}` }, immediate)
 }
 
@@ -427,7 +441,7 @@ export const reportError = async (
   error: Error | string,
   extra?: Record<string, any>
 ): Promise<void> => {
-  const tracker = getTrackerView(getTracker().getConfig())
+  const tracker = getTracker()
   const errorData = {
     message: error instanceof Error ? error.message : error,
     stack: error instanceof Error ? error.stack || '' : '',
@@ -438,7 +452,7 @@ export const reportError = async (
 
 // 白屏错误自动上报方法
 export const reportWhiteScreen = async (data: WhiteScreenInfo): Promise<void> => {
-  const tracker = getTrackerView(getTracker().getConfig())
+  const tracker = getTracker()
   await tracker.report('white_screen', data, true)
 }
 
@@ -448,6 +462,6 @@ export const trackEvent = async (
   eventData?: Record<string, any>,
   isImmediate = false
 ): Promise<void> => {
-  const tracker = getTrackerView(getTracker().getConfig())
+  const tracker = getTracker()
   await tracker.trackEvent(eventType, eventData, isImmediate)
 }
