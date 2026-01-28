@@ -10,6 +10,7 @@ import {
 } from '../../types/src/core/config.js'
 import { PluginManager } from './plugin/plugin-manager.js'
 import { PluginContext } from './plugin/types.js'
+import { trackEventBus } from './event-bus/event-bus.js'
 //引入沙箱相关内容
 import { ProxySandbox } from './sandbox/index.js'
 export class LifecycleManager {
@@ -144,7 +145,7 @@ export class Tracker {
     this.queueManager = new QueueManager(queueConfig)
     this.lifecycleManager = new LifecycleManager()
     const pluginContext: PluginContext = {
-      tracker: this,
+      tracker: this, // 将在 initTracker 中通过沙箱包装
       config: this.config,
       send: this.report.bind(this),
       // 添加事件总线方法
@@ -152,6 +153,7 @@ export class Tracker {
       once: trackEventBus.once.bind(trackEventBus),
       emit: trackEventBus.emit.bind(trackEventBus),
       off: trackEventBus.off.bind(trackEventBus),
+
       // 添加插件间数据共享方法
       setData: this.setData.bind(this),
       getData: this.getData.bind(this),
@@ -433,9 +435,26 @@ export const initTracker = (config: TrackerConfig): Tracker => {
   // 通过 Tracker.getInstance 创建核心实例
   const coreTracker = Tracker.getInstance(config)
 
-  // 创建沙箱包装 - 传入原始 Tracker 实例而不是 config
+  // 创建沙箱包装 - 传入原始 Tracker 实例
   globalSandboxInstance = new ProxySandbox(coreTracker)
   globalTrackerInstance = globalSandboxInstance.getProxy()
+
+  // 更新插件管理器的上下文，使用沙箱代理对象
+  const proxyTracker = globalTrackerInstance
+  const pluginContext: PluginContext = {
+    tracker: proxyTracker,
+    config: coreTracker.getConfig(),
+    send: proxyTracker.report.bind(proxyTracker),
+    on: trackEventBus.on.bind(trackEventBus),
+    once: trackEventBus.once.bind(trackEventBus),
+    emit: trackEventBus.emit.bind(trackEventBus),
+    off: trackEventBus.off.bind(trackEventBus),
+    setData: proxyTracker.setData.bind(proxyTracker),
+    getData: proxyTracker.getData.bind(proxyTracker),
+    deleteData: proxyTracker.deleteData.bind(proxyTracker),
+    hasData: proxyTracker.hasData.bind(proxyTracker),
+  }
+  coreTracker.getPluginManager().setContext(pluginContext)
 
   console.log('[Tracker] SDK初始化完成（沙箱模式）')
   return globalTrackerInstance

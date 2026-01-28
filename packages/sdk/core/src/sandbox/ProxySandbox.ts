@@ -88,7 +88,8 @@ export class ProxySandbox {
     return (...args: any[]) => {
       try {
         console.log(`[ProxySandbox] 执行方法: ${methodName}，参数:`, args)
-        const result = method.apply(target, args)
+        // 使用代理对象作为 this 绑定，确保方法内部的 this 指向代理对象
+        const result = Reflect.apply(method, this.proxy, args)
         if (result instanceof Promise) {
           return result.catch((error: Error) => {
             console.error(`[ProxySandbox] 异步方法执行错误: ${methodName}`, error)
