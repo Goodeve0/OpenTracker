@@ -11,6 +11,8 @@ import {
 import { PluginManager } from './plugin/plugin-manager.js'
 import { PluginContext } from './plugin/types.js'
 import { trackEventBus } from './event-bus/event-bus.js'
+//引入沙箱相关内容
+import { ProxySandbox } from './sandbox/index.js'
 export class LifecycleManager {
   private hooks: Map<LifecycleHook, LifecycleHookFunction[]> = new Map()
   private config: LifecycleManagerConfig
@@ -143,7 +145,7 @@ export class Tracker {
     this.queueManager = new QueueManager(queueConfig)
     this.lifecycleManager = new LifecycleManager()
     const pluginContext: PluginContext = {
-      tracker: this,
+      tracker: this, // 将在 initTracker 中通过沙箱包装
       config: this.config,
       send: this.report.bind(this),
       // 添加事件总线方法
@@ -151,6 +153,7 @@ export class Tracker {
       once: trackEventBus.once.bind(trackEventBus),
       emit: trackEventBus.emit.bind(trackEventBus),
       off: trackEventBus.off.bind(trackEventBus),
+
       // 添加插件间数据共享方法
       setData: this.setData.bind(this),
       getData: this.getData.bind(this),
@@ -398,7 +401,10 @@ export const destroyTracker = async (): Promise<void> => {
     tracker: globalTrackerInstance,
     config: { ...globalTrackerInstance.getConfig() },
   }
-
+  if (globalSandboxInstance) {
+    globalSandboxInstance.destroy()
+    globalSandboxInstance = null
+  }
   // 触发销毁前钩子
   await globalTrackerInstance
     .getLifecycleManager()
@@ -406,11 +412,9 @@ export const destroyTracker = async (): Promise<void> => {
 
   // 触发销毁完成钩子
   await globalTrackerInstance.getLifecycleManager().trigger(LifecycleHook.DESTROY, destroyContext)
-
   // 清除全局实例
   globalTrackerInstance = null
   Tracker.clearInstance()
-
   console.log('[Tracker] SDK已销毁')
 }
 
@@ -418,13 +422,43 @@ export default Tracker
 
 // 全局Tracker实例引用
 let globalTrackerInstance: Tracker | null = null
+let globalSandboxInstance: ProxySandbox | null = null
 
 // 初始化全局Tracker实例方法
 export const initTracker = (config: TrackerConfig): Tracker => {
-  globalTrackerInstance = Tracker.getInstance(config)
+  // 如果已经有全局实例，直接返回
+  if (globalTrackerInstance) {
+    console.warn('[Tracker] SDK已经初始化，返回现有实例')
+    return globalTrackerInstance
+  }
+
+  // 通过 Tracker.getInstance 创建核心实例
+  const coreTracker = Tracker.getInstance(config)
+
+  // 创建沙箱包装 - 传入原始 Tracker 实例
+  globalSandboxInstance = new ProxySandbox(coreTracker)
+  globalTrackerInstance = globalSandboxInstance.getProxy()
+
+  // 更新插件管理器的上下文，使用沙箱代理对象
+  const proxyTracker = globalTrackerInstance
+  const pluginContext: PluginContext = {
+    tracker: proxyTracker,
+    config: coreTracker.getConfig(),
+    send: proxyTracker.report.bind(proxyTracker),
+    on: trackEventBus.on.bind(trackEventBus),
+    once: trackEventBus.once.bind(trackEventBus),
+    emit: trackEventBus.emit.bind(trackEventBus),
+    off: trackEventBus.off.bind(trackEventBus),
+    setData: proxyTracker.setData.bind(proxyTracker),
+    getData: proxyTracker.getData.bind(proxyTracker),
+    deleteData: proxyTracker.deleteData.bind(proxyTracker),
+    hasData: proxyTracker.hasData.bind(proxyTracker),
+  }
+  coreTracker.getPluginManager().setContext(pluginContext)
+
+  console.log('[Tracker] SDK初始化完成（沙箱模式）')
   return globalTrackerInstance
 }
-
 // 获取全局Tracker实例方法
 export const getTracker = (): Tracker => {
   if (!globalTrackerInstance) {
