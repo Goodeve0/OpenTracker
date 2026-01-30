@@ -126,8 +126,8 @@ const ErrorOverview = () => {
   const fetchErrorData = async (startTime?: number, endTime?: number) => {
     setIsLoading(true)
     try {
-      // 如果没有提供时间范围，默认查询最近24小时
-      const defaultStartTime = Date.now() - 24 * 60 * 60 * 1000
+      // 如果没有提供时间范围，默认查询最近7天（便于图表有数据）
+      const defaultStartTime = Date.now() - 7 * 24 * 60 * 60 * 1000
       const actualStartTime = startTime || defaultStartTime
       const actualEndTime = endTime || Date.now()
 
@@ -232,7 +232,11 @@ const ErrorOverview = () => {
     }
 
     if (errorTrends.code === 200 && errorTrends.data) {
-      trendData = errorTrends.data as TrendData
+      const raw = errorTrends.data as TrendData
+      const hasAnyValue = raw.series?.some((s) => s.data?.some((v) => Number(v) > 0)) ?? false
+      if (raw.dates?.length && raw.series?.length && hasAnyValue) {
+        trendData = raw
+      }
     }
 
     // 处理错误类型分布数据
@@ -279,8 +283,6 @@ const ErrorOverview = () => {
       yAxis: {
         type: 'value',
         min: 0,
-        max: 500,
-        interval: 100,
         axisLabel: {
           formatter: '{value}',
         },
@@ -390,8 +392,6 @@ const ErrorOverview = () => {
       yAxis: {
         type: 'value',
         min: 0,
-        max: 500,
-        interval: 100,
         axisLabel: {
           formatter: '{value}',
         },
@@ -535,8 +535,8 @@ const ErrorOverview = () => {
             <Col span={24}>
               <ChartWithAdd
                 chartType={ChartType.ERROR_TRENDS}
-                title="错误趋势分析 (24h)"
-                description="展示24小时内的错误变化趋势"
+                title="错误趋势分析 (7天)"
+                description="展示近7天内的错误变化趋势"
                 category="错误分析"
                 defaultSize="large"
               >

@@ -231,7 +231,8 @@ export const visitorAPI = {
         pagesPerSession: totalVisitors > 0 ? totalPageViews / totalVisitors : 0,
         newVisitors: 0, // 没有实际数据，返回0
         returningVisitors: 0, // 没有实际数据，返回0
-        maxActivity: Math.max(...visitorData.map((item) => item.visitors), 0),
+        maxActivity:
+          visitorData.length > 0 ? Math.max(...visitorData.map((item) => item.visitors), 0) : 0,
         totalPageViews: totalPageViews,
         uniquePageViews: totalPageViews, // 简化处理，使用总浏览量
         totalSessions: totalVisitors, // 简化处理，使用总访客数
