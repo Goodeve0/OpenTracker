@@ -119,7 +119,7 @@ const BehaviorVisitedPages: React.FC = () => {
 
   return (
     <div style={{ padding: 20 }}>
-      <Title level={3}>访问页面分析</Title>
+      <div style={{ fontSize: '20px', fontWeight: 600, color: '#000000e0' }}>访问页面分析</div>
       <Card>
         <Spin spinning={loading}>
           <Table

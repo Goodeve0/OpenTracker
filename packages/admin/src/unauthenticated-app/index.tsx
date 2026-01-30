@@ -14,7 +14,11 @@ const AuthPage = () => {
 
   return (
     <div style={{ maxWidth: '350px', margin: '50px auto' }}>
-      <Card title={<h2 style={{ margin: 0 }}>{isLogin ? '用户登录' : '用户注册'}</h2>}>
+      <Card
+        title={
+          <h2 style={{ margin: 0, textAlign: 'center' }}>{isLogin ? '用户登录' : '用户注册'}</h2>
+        }
+      >
         {/* 根据状态渲染登录或注册组件 */}
         {isLogin ? <Login /> : <Register />}
 

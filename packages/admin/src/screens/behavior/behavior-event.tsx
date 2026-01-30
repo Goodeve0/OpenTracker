@@ -266,8 +266,10 @@ const BehaviorEvent: React.FC = () => {
       <Card
         title={
           <div className="flex items-center gap-2">
-            <SearchOutlined />
-            <span>事件分析</span>
+            <div style={{ fontSize: '20px', fontWeight: 600, color: '#000000e0' }}>
+              <SearchOutlined />
+              事件分析
+            </div>
           </div>
         }
         extra={

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
+import { Row, Col, Card, Layout, Space, Statistic } from 'antd'
 import ChartWithAdd from '../../components/chart-with-add'
 import { ChartType } from '../../types'
 import { queryStatsData } from '../../api/track'
@@ -13,6 +14,8 @@ type LoadingPerf = {
 }
 type NetworkPerf = { dns?: number | null; tcp?: number | null }
 type RuntimePerf = { longTask?: number | null; fps?: number | null; resourceLoad?: number | null }
+
+const { Content } = Layout
 
 const fmtMs = (v?: number | null) => {
   if (v === null || v === undefined) return '—'
@@ -433,134 +436,119 @@ const PerformancePage: React.FC = () => {
   }, [core, loading, network, runtime, histories])
 
   return (
-    <div className="performance-page" style={{ padding: 16 }}>
-      <h2>性能监控</h2>
+    <Layout style={{ minHeight: '100vh' }}>
+      <Content style={{ padding: '24px' }}>
+        <Space direction="vertical" size="large" style={{ display: 'flex' }}>
+          <div style={{ fontSize: '20px', fontWeight: 600, color: '#000000e0' }}>性能监控</div>
+          <Row gutter={16}>
+            <Col span={6}>
+              <Card title="核心 Web Vitals">
+                <p>LCP: {fmtMs(core.lcp)}</p>
+                <p>INP: {fmtMs(core.inp)}</p>
+                <p>CLS: {core.cls != null ? String(core.cls) : '—'}</p>
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card title="加载性能">
+                <p>TTFB: {fmtMs(loading.ttfb)}</p>
+                <p>FCP: {fmtMs(loading.fcp ?? loading.fp)}</p>
+                <p>DCL: {fmtMs(loading.dcl)}</p>
+                <p>Load: {fmtMs(loading.load)}</p>
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card title="网络">
+                <p>DNS: {fmtMs(network.dns)}</p>
+                <p>TCP: {fmtMs(network.tcp)}</p>
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card title="运行时">
+                <p>
+                  长任务 (ms):{' '}
+                  {runtime.longTask != null ? Math.round(runtime.longTask as number) : '—'}
+                </p>
+                <p>FPS: {runtime.fps != null ? Math.round(runtime.fps as number) : '—'}</p>
+                <p>资源平均耗时: {fmtMs(runtime.resourceLoad)}</p>
+              </Card>
+            </Col>
+          </Row>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))',
-          gap: 12,
-          marginTop: 12,
-        }}
-      >
-        <section style={{ padding: 12, background: '#fff', borderRadius: 6 }}>
-          <h3>核心 Web Vitals</h3>
-          <div>
-            LCP: <strong>{fmtMs(core.lcp)}</strong>
-          </div>
-          <div>
-            INP: <strong>{fmtMs(core.inp)}</strong>
-          </div>
-          <div>
-            CLS: <strong>{core.cls != null ? String(core.cls) : '—'}</strong>
-          </div>
-        </section>
+          <Row justify="space-between" align="middle">
+            <Col>
+              <button style={{ marginRight: 10 }} onClick={() => pull()}>
+                手动刷新
+              </button>
+              <button
+                onClick={() => {
+                  setCore({ lcp: null, inp: null, cls: null })
+                  setLoading({ ttfb: null, fp: null, fcp: null, dcl: null, load: null })
+                  setNetwork({ dns: null, tcp: null })
+                  setRuntime({ longTask: null, fps: null, resourceLoad: null })
+                  setRawReport(null)
+                  setLastUpdate(null)
+                }}
+              >
+                清空
+              </button>
+            </Col>
+            <Col>
+              <Space>
+                <div style={{ marginLeft: 'auto', color: '#666' }}>
+                  最后更新时间: {lastUpdate ? new Date(lastUpdate).toLocaleString() : '—'}
+                </div>
+              </Space>
+            </Col>
+          </Row>
 
-        <section style={{ padding: 12, background: '#fff', borderRadius: 6 }}>
-          <h3>加载性能</h3>
-          <div>
-            TTFB: <strong>{fmtMs(loading.ttfb)}</strong>
-          </div>
-          <div>
-            FCP: <strong>{fmtMs(loading.fcp ?? loading.fp)}</strong>
-          </div>
-          <div>
-            DCL: <strong>{fmtMs(loading.dcl)}</strong>
-          </div>
-          <div>
-            Load: <strong>{fmtMs(loading.load)}</strong>
-          </div>
-        </section>
+          {/* Charts area：仅保留饼图与多指标折线图 */}
+          <Row gutter={16}>
+            <Col span={12}>
+              <ChartWithAdd
+                chartType={ChartType.PERFORMANCE_OVERVIEW}
+                title="性能分布（饼状图）"
+                description="展示网站性能指标的分布情况"
+                category="性能分析"
+                defaultSize="medium"
+              >
+                <div ref={pieRef} style={{ width: '100%', height: 240 }} />
+              </ChartWithAdd>
+            </Col>
+            <Col span={12}>
+              <ChartWithAdd
+                chartType={ChartType.PERFORMANCE_TRENDS}
+                title="多指标趋势（折线图）"
+                description="展示各项性能指标的变化趋势"
+                category="性能分析"
+                defaultSize="medium"
+              >
+                <div ref={lineRef} style={{ width: '100%', height: 240 }} />
+              </ChartWithAdd>
+            </Col>
+          </Row>
 
-        <section style={{ padding: 12, background: '#fff', borderRadius: 6 }}>
-          <h3>网络</h3>
-          <div>
-            DNS: <strong>{fmtMs(network.dns)}</strong>
-          </div>
-          <div>
-            TCP: <strong>{fmtMs(network.tcp)}</strong>
-          </div>
-        </section>
-
-        <section style={{ padding: 12, background: '#fff', borderRadius: 6 }}>
-          <h3>运行时</h3>
-          <div>
-            长任务 (ms):{' '}
-            <strong>
-              {runtime.longTask != null ? Math.round(runtime.longTask as number) : '—'}
-            </strong>
-          </div>
-          <div>
-            FPS: <strong>{runtime.fps != null ? Math.round(runtime.fps as number) : '—'}</strong>
-          </div>
-          <div>
-            资源平均耗时: <strong>{fmtMs(runtime.resourceLoad)}</strong>
-          </div>
-        </section>
-      </div>
-
-      <div style={{ marginTop: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
-        <button onClick={() => pull()}>手动刷新</button>
-        <button
-          onClick={() => {
-            setCore({ lcp: null, inp: null, cls: null })
-            setLoading({ ttfb: null, fp: null, fcp: null, dcl: null, load: null })
-            setNetwork({ dns: null, tcp: null })
-            setRuntime({ longTask: null, fps: null, resourceLoad: null })
-            setRawReport(null)
-            setLastUpdate(null)
-          }}
-        >
-          清空
-        </button>
-
-        <div style={{ marginLeft: 'auto', color: '#666' }}>
-          最后更新时间: {lastUpdate ? new Date(lastUpdate).toLocaleString() : '—'}
-        </div>
-      </div>
-
-      {/* Charts area：仅保留饼图与多指标折线图 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
-        <ChartWithAdd
-          chartType={ChartType.PERFORMANCE_OVERVIEW}
-          title="性能分布（饼状图）"
-          description="展示网站性能指标的分布情况"
-          category="性能分析"
-          defaultSize="medium"
-        >
-          <div ref={pieRef} style={{ width: '100%', height: 240 }} />
-        </ChartWithAdd>
-
-        <ChartWithAdd
-          chartType={ChartType.PERFORMANCE_TRENDS}
-          title="多指标趋势（折线图）"
-          description="展示各项性能指标的变化趋势"
-          category="性能分析"
-          defaultSize="medium"
-        >
-          <div ref={lineRef} style={{ width: '100%', height: 240 }} />
-        </ChartWithAdd>
-      </div>
-
-      <div style={{ marginTop: 12 }}>
-        <details>
-          <summary>原始报告（JSON）</summary>
-          <pre
-            style={{
-              whiteSpace: 'pre-wrap',
-              background: '#f7f7f7',
-              padding: 12,
-              borderRadius: 6,
-              maxHeight: 300,
-              overflow: 'auto',
-            }}
-          >
-            {rawReport ? JSON.stringify(rawReport, null, 2) : '—'}
-          </pre>
-        </details>
-      </div>
-    </div>
+          <Row gutter={16}>
+            <Col span={24}>
+              <details>
+                <summary>原始报告（JSON）</summary>
+                <pre
+                  style={{
+                    whiteSpace: 'pre-wrap',
+                    background: '#f7f7f7',
+                    padding: 12,
+                    borderRadius: 6,
+                    maxHeight: 300,
+                    overflow: 'auto',
+                  }}
+                >
+                  {rawReport ? JSON.stringify(rawReport, null, 2) : '—'}
+                </pre>
+              </details>
+            </Col>
+          </Row>
+        </Space>
+      </Content>
+    </Layout>
   )
 }
 
