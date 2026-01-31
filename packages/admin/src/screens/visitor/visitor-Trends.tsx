@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Row, Col, Statistic, Tooltip, Spin, DatePicker, Select, ConfigProvider } from 'antd'
+import {
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Tooltip,
+  Spin,
+  DatePicker,
+  Select,
+  ConfigProvider,
+  Space,
+} from 'antd'
 import { ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import ChartWithAdd from '../../components/chart-with-add'
 import { ChartType } from '../../types'
@@ -463,7 +474,7 @@ const VisitorTrends: React.FC = () => {
             marginBottom: 20,
           }}
         >
-          <h2>访客趋势图</h2>
+          <div style={{ fontSize: '20px', fontWeight: 600, color: '#000000e0' }}>访客趋势</div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <RangePicker
               value={dateRange}

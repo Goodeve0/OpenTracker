@@ -525,7 +525,7 @@ const DashboardPage: React.FC = () => {
         style={{ margin: '24px 16px', padding: 24, background: '#fff', borderRadius: '8px' }}
       >
         <div style={{ marginBottom: 24 }}>
-          <h2 style={{ margin: 0 }}>报表面板</h2>
+          <div style={{ fontSize: '20px', fontWeight: 600, color: '#000000e0' }}>报表面板</div>
         </div>
 
         {/* 空状态提示 */}

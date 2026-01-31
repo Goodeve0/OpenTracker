@@ -41,8 +41,8 @@ const AuthenticatedApp: React.FC = () => {
     '/home/behavior/page': 'sub32',
     '/home/customer/growth': 'sub41',
     '/home/customer/source': 'sub42',
-    '/home/error/logs': 'sub51',
-    '/home/error/overview': 'sub52',
+    '/home/error/overview': 'sub51',
+    '/home/error/logs': 'sub52',
     '/home/performance/overview': 'sub61',
     '/home/blank/analysis': 'sub71',
   }
@@ -105,8 +105,8 @@ const AuthenticatedApp: React.FC = () => {
       sub32: '/home/behavior/page',
       sub41: '/home/customer/growth',
       sub42: '/home/customer/source',
-      sub51: '/home/error/logs',
-      sub52: '/home/error/overview',
+      sub51: '/home/error/overview',
+      sub52: '/home/error/logs',
       sub61: '/home/performance/overview',
       sub71: '/home/blank/analysis',
     }
