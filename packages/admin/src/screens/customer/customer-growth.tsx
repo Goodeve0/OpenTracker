@@ -51,9 +51,9 @@ const CustomerGrowth: React.FC = () => {
     setLoading(true)
     setError(null)
     try {
-      // 直接使用固定的时间范围，确保能够获取到后端数据
-      const startDate = dayjs('2024-12-26')
-      const endDate = dayjs('2025-01-24')
+      // 使用最近30天的时间范围，确保能够获取到测试数据
+      const endDate = dayjs()
+      const startDate = dayjs().subtract(30, 'day')
 
       console.log('时间范围:', {
         start: startDate.format('YYYY-MM-DD'),

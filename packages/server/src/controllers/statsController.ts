@@ -1,5 +1,6 @@
 import { Context } from 'koa'
 import statsService from '../services/statsService'
+import prisma from '../lib/prisma'
 
 class StatsController {
   async getStats(ctx: Context) {
@@ -50,12 +51,26 @@ class StatsController {
     }
 
     try {
+      // 获取用户关联的所有项目的 API 密钥
+      const projects = await (prisma as any).project.findMany({
+        where: {
+          userId: parseInt(userInfo.userId),
+        },
+        select: {
+          apiKey: true,
+        },
+      })
+
+      // 提取 API 密钥列表
+      const projectIds = projects.map((project: any) => project.apiKey)
+
       const data = await statsService.getStats({
         type: type as string,
         startTime: startTime ? Number(startTime) : undefined,
         endTime: endTime ? Number(endTime) : undefined,
         limit: limit ? Number(limit) : undefined,
         userId: userInfo.userId, // 传递用户ID
+        projectIds, // 传递项目 API 密钥列表
       })
 
       ctx.body = {

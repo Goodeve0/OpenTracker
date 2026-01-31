@@ -51,11 +51,9 @@ class TrackController {
   }
   //查询接口
   async query(ctx: Context) {
-    // 从 querystring 中解析请求参数
     const { category, startTime, endTime, keyword, page, pageSize } = ctx.request.query
 
-    // 调用 Service 层进行查询
-    const result = trackService.queryLogs({
+    const result = await trackService.queryLogs({
       category: category as any,
       startTime: startTime ? Number(startTime) : undefined,
       endTime: endTime ? Number(endTime) : undefined,

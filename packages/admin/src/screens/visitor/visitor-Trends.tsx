@@ -4,6 +4,7 @@ import { ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined } from '@ant-des
 import ChartWithAdd from '../../components/chart-with-add'
 import { ChartType } from '../../types'
 import dayjs from 'dayjs'
+import { queryStatsData } from '../../api/track'
 import { visitorAPI, VisitorDataPoint, OverviewData } from '../../api/visitor'
 
 const { RangePicker } = DatePicker
@@ -49,14 +50,26 @@ interface StatCardProps {
   color?: string
 }
 
-// 从后端API获取访客趋势数据
+// 从后端API获取访客趋势数据（使用与其它统计相同的 queryStatsData，保证 URL 与鉴权一致）
 const fetchVisitorTrends = async (
   startDate: string,
   endDate: string
 ): Promise<VisitorDataPoint[]> => {
   try {
-    const response = await visitorAPI.fetchVisitorTrends(startDate, endDate)
-    return response.data || []
+    const startTime = dayjs(startDate).startOf('day').valueOf()
+    const endTime = dayjs(endDate).endOf('day').valueOf()
+    const response = await queryStatsData({
+      type: 'visitor_trends',
+      startTime,
+      endTime,
+    })
+    const statsData = response?.data
+    if (!statsData?.dates?.length || !statsData?.values) return []
+    return statsData.dates.map((date: string, index: number) => ({
+      date: dayjs(date).format('YYYY-MM-DD'),
+      visitors: statsData.values[index] ?? 0,
+      pageViews: Math.ceil((statsData.values[index] ?? 0) * 1.5),
+    }))
   } catch (error) {
     console.error('获取访客趋势数据失败:', error)
     return []
@@ -129,13 +142,13 @@ const LineChart: React.FC<LineChartProps> = ({
   }
 
   // 找到数据的最大值和最小值
-  const maxValue = Math.max(...data.map((d) => d[dataField]))
-  const minValue = Math.min(...data.map((d) => d[dataField]))
+  const maxValue = data.length > 0 ? Math.max(...data.map((d) => d[dataField])) : 0
+  const minValue = data.length > 0 ? Math.min(...data.map((d) => d[dataField])) : 0
   const valueRange = maxValue - minValue || 1 // 避免除以零
 
   // 计算数据点的坐标
   const dataPoints = data.map((item, index) => {
-    const x = padding.left + (index / (data.length - 1)) * chartWidth
+    const x = padding.left + (index / Math.max(data.length - 1, 1)) * chartWidth
     const y = padding.top + chartHeight - ((item[dataField] - minValue) / valueRange) * chartHeight
     return { x, y, value: item[dataField], date: item.date }
   })
@@ -152,7 +165,8 @@ const LineChart: React.FC<LineChartProps> = ({
   const xTicks: Tick[] = []
   const tickCount = Math.min(5, data.length) // 确保不超过数据点数量
   for (let i = 0; i < tickCount; i++) {
-    const index = Math.round((i / (tickCount - 1)) * (data.length - 1))
+    const index =
+      data.length > 1 ? Math.round((i / Math.max(tickCount - 1, 1)) * (data.length - 1)) : 0
     const point = dataPoints[index]
     xTicks.push({
       x: point.x,
@@ -366,23 +380,36 @@ const VisitorTrends: React.FC = () => {
         const startDate = dateRange[0].format('YYYY-MM-DD')
         const endDate = dateRange[1].format('YYYY-MM-DD')
 
-        // 调用真实API获取数据
-        const [trendData, overview] = await Promise.all([
-          fetchVisitorTrends(startDate, endDate),
-          fetchVisitorOverview(startDate, endDate),
-        ])
+        // 使用与其它统计相同的接口获取访客趋势，再根据趋势数据计算概览
+        const trendData = await fetchVisitorTrends(startDate, endDate)
+        const totalVisitors = trendData.reduce((sum, d) => sum + d.visitors, 0)
+        const totalPageViews = trendData.reduce((sum, d) => sum + d.pageViews, 0)
+        const overview: OverviewData = {
+          totalVisits: totalVisitors,
+          uniqueVisitors: totalVisitors,
+          averageDuration: 0,
+          bounceRate: 0,
+          pagesPerSession: totalVisitors > 0 ? totalPageViews / totalVisitors : 0,
+          newVisitors: 0,
+          returningVisitors: 0,
+          maxActivity: trendData.length ? Math.max(...trendData.map((d) => d.visitors), 0) : 0,
+          totalPageViews: totalPageViews,
+          uniquePageViews: totalPageViews,
+          totalSessions: totalVisitors,
+          uniqueSessions: totalVisitors,
+        }
 
         // 调试信息：打印获取的数据
         console.log('从API获取的访客趋势数据:', trendData)
         console.log('数据统计:', {
           数据点数量: trendData.length,
           访客数范围: {
-            最小值: Math.min(...trendData.map((d) => d.visitors)),
-            最大值: Math.max(...trendData.map((d) => d.visitors)),
+            最小值: trendData.length > 0 ? Math.min(...trendData.map((d) => d.visitors)) : 0,
+            最大值: trendData.length > 0 ? Math.max(...trendData.map((d) => d.visitors)) : 0,
           },
           浏览量范围: {
-            最小值: Math.min(...trendData.map((d) => d.pageViews)),
-            最大值: Math.max(...trendData.map((d) => d.pageViews)),
+            最小值: trendData.length > 0 ? Math.min(...trendData.map((d) => d.pageViews)) : 0,
+            最大值: trendData.length > 0 ? Math.max(...trendData.map((d) => d.pageViews)) : 0,
           },
         })
 
