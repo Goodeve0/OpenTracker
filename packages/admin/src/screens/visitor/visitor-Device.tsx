@@ -154,7 +154,7 @@ const VisitorDevice: React.FC = () => {
             marginBottom: 20,
           }}
         >
-          <h2>设备统计</h2>
+          <div style={{ fontSize: '20px', fontWeight: 600, color: '#000000e0' }}>设备统计</div>
         </div>
 
         <Row gutter={[16, 16]}>

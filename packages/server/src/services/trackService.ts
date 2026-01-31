@@ -4,7 +4,20 @@ import prisma from '../lib/prisma'
 class TrackService {
   //分类处理
   async handleReport(type: string, data: any) {
-    const timestamp = data.time ? new Date(data.time) : new Date()
+    // SDK/客户端可能上传 time / timestamp（毫秒或秒），这里做兼容
+    const rawTime = data?.time ?? data?.timestamp
+    let timeMs: number | undefined
+    if (typeof rawTime === 'number') timeMs = rawTime
+    if (typeof rawTime === 'string' && rawTime.trim() !== '') timeMs = Number(rawTime)
+    // 兼容「秒级时间戳」
+    if (typeof timeMs === 'number' && Number.isFinite(timeMs) && timeMs > 0 && timeMs < 1e12) {
+      timeMs = timeMs * 1000
+    }
+    const timestamp =
+      typeof timeMs === 'number' && Number.isFinite(timeMs) ? new Date(timeMs) : new Date()
+
+    // project_id 兼容：有的 SDK 传 project_id，有的传 apiKey/_apiKey
+    const projectId = data?.project_id ?? data?.apiKey ?? data?._apiKey
 
     switch (type) {
       case 'error':
@@ -17,7 +30,7 @@ class TrackService {
             userAgent: data.userAgent,
             timestamp,
             extra: JSON.stringify(data),
-            project_id: data.project_id,
+            project_id: projectId,
           },
         })
         break
@@ -31,7 +44,7 @@ class TrackService {
             userAgent: data.userAgent,
             timestamp,
             extra: JSON.stringify(data),
-            project_id: data.project_id,
+            project_id: projectId,
           },
         })
         break
@@ -45,7 +58,7 @@ class TrackService {
             pageUrl: data.pageUrl,
             timestamp,
             extra: JSON.stringify(data),
-            project_id: data.project_id,
+            project_id: projectId,
           },
         })
         break
@@ -58,12 +71,39 @@ class TrackService {
             pageUrl: data.pageUrl,
             timestamp,
             extra: JSON.stringify(data),
-            project_id: data.project_id,
+            project_id: projectId,
           },
         })
         break
       default:
         console.warn('未知上报类型：', type)
+    }
+
+    // 统一记录一份到 Track_Event，用于访客趋势 / 设备分布 / PV 等统计
+    if (['error', 'behavior', 'performance', 'blank'].includes(type)) {
+      try {
+        // raw_data 字段限制254字符，截断处理
+        const rawDataStr = JSON.stringify(data)
+        const truncatedRawData =
+          rawDataStr.length > 250 ? rawDataStr.slice(0, 250) + '...' : rawDataStr
+
+        await prisma.track_Event.create({
+          data: {
+            project_id: projectId,
+            type,
+            event_name: data.eventName || data.event || type,
+            user_id: data.userId || data.user_id || null,
+            page_url: data.page || data.pageUrl || data.page_url || null,
+            sdk_version: data.sdkVersion || data.sdk_version || null,
+            ua: data.userAgent || data.ua || null,
+            created_at: timestamp,
+            raw_data: truncatedRawData,
+          },
+        })
+      } catch (e) {
+        console.error('写入 Track_Event 失败:', e)
+        // 不抛出错误，避免影响主流程
+      }
     }
   }
 
@@ -200,8 +240,24 @@ class TrackService {
   }
 
   private async queryBlank({ timeFilter, skip, take }: any) {
-    const where: any = {
-      timestamp: timeFilter,
+    const where: any = {}
+    if (timeFilter && (timeFilter.gte != null || timeFilter.lte != null)) {
+      const gte = timeFilter.gte != null ? new Date(timeFilter.gte) : null
+      const lte = timeFilter.lte != null ? new Date(timeFilter.lte) : null
+      const gteValid = gte != null && !Number.isNaN(gte.getTime())
+      const lteValid = lte != null && !Number.isNaN(lte.getTime())
+      // 用 UTC 日期字符串构造范围，避免 @db.Date 与本地时区比较漏数据
+      if (gteValid || lteValid) {
+        where.timestamp = {}
+        if (gteValid) {
+          const day = gte!.toISOString().slice(0, 10)
+          where.timestamp.gte = new Date(day + 'T00:00:00.000Z')
+        }
+        if (lteValid) {
+          const day = lte!.toISOString().slice(0, 10)
+          where.timestamp.lte = new Date(day + 'T23:59:59.999Z')
+        }
+      }
     }
 
     const [total, list] = await Promise.all([

@@ -69,8 +69,8 @@ const BlankOverview: React.FC = () => {
   const [blankList, setBlankList] = useState<BlankListItem[]>([])
   const [trendData, setTrendData] = useState<WhiteScreenTrendData[]>([])
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
-    dayjs('2025-12-14'),
-    dayjs('2025-12-20'),
+    dayjs().subtract(30, 'day'),
+    dayjs(),
   ])
 
   const showDetail = () => {
@@ -88,29 +88,35 @@ const BlankOverview: React.FC = () => {
         limit: 7,
       })
 
-      if (statsResponse.code === 200 && statsResponse.data) {
-        // 处理后端返回的数据格式
-        if (statsResponse.data.dates && statsResponse.data.values) {
-          const trends = statsResponse.data.dates.map((date: string, index: number) => ({
+      if (statsResponse?.code === 200 && statsResponse?.data) {
+        const d = statsResponse.data
+        if (Array.isArray(d.dates) && Array.isArray(d.values)) {
+          const trends = d.dates.map((date: string, index: number) => ({
             date: dayjs(date).format('YYYY/MM/DD'),
-            whiteScreenCount: statsResponse.data.values[index] || 0,
-            affectedUserCount: Math.ceil(statsResponse.data.values[index] * 0.3) || 0, // 模拟用户数
-            whiteScreenRate: (statsResponse.data.values[index] / 100).toFixed(2) || 0, // 模拟白屏率
-            affectedUserRate: (statsResponse.data.values[index] / 200).toFixed(2) || 0, // 模拟影响用户率
+            whiteScreenCount: d.values[index] ?? 0,
+            affectedUserCount: Math.ceil((d.values[index] ?? 0) * 0.3),
+            whiteScreenRate: ((d.values[index] ?? 0) / 100).toFixed(2),
+            affectedUserRate: ((d.values[index] ?? 0) / 200).toFixed(2),
+          }))
+          setTrendData(trends)
+        } else if (Array.isArray(d)) {
+          const trends = d.map((item: any) => ({
+            date: dayjs(item.timestamp || item.date).format('YYYY/MM/DD'),
+            whiteScreenCount: item.blankCount ?? item.value ?? 0,
+            affectedUserCount: Math.ceil((item.blankCount ?? item.value ?? 0) * 0.3),
+            whiteScreenRate: String(
+              item.blankRate ?? (item.blankCount ?? item.value ?? 0) / 100 ?? 0
+            ),
+            affectedUserRate: String(
+              item.userRate ?? (item.blankCount ?? item.value ?? 0) / 200 ?? 0
+            ),
           }))
           setTrendData(trends)
         } else {
-          // 兼容其他数据格式
-          const trends = statsResponse.data.map((item: any) => ({
-            date: dayjs(item.timestamp || item.date).format('YYYY/MM/DD'),
-            whiteScreenCount: item.blankCount || item.value || 0,
-            affectedUserCount:
-              item.userCount || Math.ceil((item.blankCount || item.value || 0) * 0.3) || 0,
-            whiteScreenRate: item.blankRate || (item.blankCount || item.value || 0) / 100 || 0,
-            affectedUserRate: item.userRate || (item.blankCount || item.value || 0) / 200 || 0,
-          }))
-          setTrendData(trends)
+          setTrendData([])
         }
+      } else {
+        setTrendData([])
       }
 
       // 获取白屏列表数据
@@ -121,20 +127,24 @@ const BlankOverview: React.FC = () => {
         pageSize: 20,
       })
 
-      if (listResponse.code === 200 && listResponse.data?.list) {
-        const list = listResponse.data.list.map((item: any, index: number) => ({
+      if (listResponse?.code === 200 && listResponse?.data?.list) {
+        const list = (listResponse.data.list as any[]).map((item: any, index: number) => ({
           key: (index + 1).toString(),
-          page: item.pageUrl || '',
-          blankCounts: 1, // 每条记录代表一次白屏
+          page: item.pageUrl ?? item.page_url ?? '',
+          blankCounts: 1,
           users: 1,
-          time: dayjs(item.timestamp).format('YYYY-MM-DD HH:mm:ss'),
+          time: item.timestamp ? dayjs(item.timestamp).format('YYYY-MM-DD HH:mm:ss') : '-',
           state: 'NEW' as const,
           option: '操作',
         }))
         setBlankList(list)
+      } else {
+        setBlankList([])
       }
     } catch (error) {
       console.error('获取白屏数据失败:', error)
+      setTrendData([])
+      setBlankList([])
       message.error('获取白屏数据失败')
     } finally {
       setLoading(false)

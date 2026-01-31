@@ -1,13 +1,13 @@
-import { Tracker } from '../reporter'
-import { SDK_PROTECTED_METHODS } from '../../../protected-list'
-import type { TrackerConfig } from '../../../types/src/core/config'
+import { Tracker } from '../tracker.js'
+import { SDK_PROTECTED_METHODS } from '../../../protected-list/index.js'
+import type { TrackerConfig } from '../../../types/src/core/config.js'
 
 export class ProxySandbox {
   private readonly tracker: Tracker
   private readonly proxy: Tracker
 
-  constructor(config: TrackerConfig) {
-    this.tracker = Tracker.getInstance(config)
+  constructor(tracker: Tracker) {
+    this.tracker = tracker
     this.proxy = this.createProxy()
   }
 
@@ -16,6 +16,7 @@ export class ProxySandbox {
     const handler: ProxyHandler<Tracker> = {
       get: (target: Tracker, property: keyof Tracker | symbol, receiver: any): any => {
         if (typeof property === 'symbol') {
+          console.log(`[ProxySandbox] 访问Symbol属性: ${property.toString()}`)
           return Reflect.get(target, property, receiver)
         }
         const value = Reflect.get(target, property, receiver)
@@ -33,7 +34,12 @@ export class ProxySandbox {
       ): boolean => {
         try {
           const readonlyProperties: string[] = ['config']
-          // 新增：如果是方法（函数），也禁止修改
+          // Symbol 类型直接禁止修改
+          if (typeof property === 'symbol') {
+            console.warn(`[ProxySandbox] 禁止修改Symbol属性: ${property.toString()}`)
+            return false
+          }
+          // 如果是方法（函数），也禁止修改
           if (
             (typeof property === 'string' && readonlyProperties.includes(property)) ||
             (typeof property === 'string' && typeof (target as any)[property] === 'function')
@@ -57,6 +63,11 @@ export class ProxySandbox {
       deleteProperty: (target: Tracker, property: keyof Tracker | symbol): boolean => {
         try {
           const protectedProperties: string[] = SDK_PROTECTED_METHODS
+          // Symbol 类型直接禁止删除
+          if (typeof property === 'symbol') {
+            console.warn(`[ProxySandbox] 禁止删除Symbol属性: ${property.toString()}`)
+            return false
+          }
           if (typeof property === 'string' && protectedProperties.includes(property)) {
             console.warn(`[ProxySandbox] 禁止删除核心属性: ${String(property)}`)
             return false
@@ -77,7 +88,8 @@ export class ProxySandbox {
     return (...args: any[]) => {
       try {
         console.log(`[ProxySandbox] 执行方法: ${methodName}，参数:`, args)
-        const result = method.apply(target, args)
+        // 使用代理对象作为 this 绑定，确保方法内部的 this 指向代理对象
+        const result = Reflect.apply(method, this.proxy, args)
         if (result instanceof Promise) {
           return result.catch((error: Error) => {
             console.error(`[ProxySandbox] 异步方法执行错误: ${methodName}`, error)
@@ -87,7 +99,7 @@ export class ProxySandbox {
         return result
       } catch (error) {
         console.error(`[ProxySandbox] 方法执行错误: ${methodName}`, error)
-        return null
+        throw error
       }
     }
   }
