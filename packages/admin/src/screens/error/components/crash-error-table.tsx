@@ -3,15 +3,9 @@ import { Table, Tag, Space, message, Spin } from 'antd'
 // 引入闪电图标（代表崩溃）和时钟图标（代表存活时间）
 import { ThunderboltOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import { queryStatsData } from '../../../api/track'
+import { CrashErrorItem } from '../../../types/error'
 
 // 1. 定义数据契约
-interface CrashErrorItem {
-  id: string
-  pageUrl: string // 崩溃时所在的网址
-  timestamp: string // 什么时候崩的
-  duration: string // 页面存活了多久（核心指标）
-  platform: string // 操作系统（Windows/Mac/Android等）
-}
 
 const CrashErrorTable = () => {
   const [dataSource, setDataSource] = useState<CrashErrorItem[]>([])

@@ -115,6 +115,57 @@ export interface BehaviorErrorReportData {
   [key: string]: any
 }
 
+export interface ApiErrorItem {
+  id: string
+  url: string // 请求地址
+  method: string // GET, POST, PUT 等
+  status: number // 状态码: 200, 404, 500, 0(跨域/断网)
+  duration: number // 耗时 (毫秒)
+  requestBody: string // 发送了什么给后端
+  responseBody: string // 后端返回了什么报错
+  timestamp: string
+}
+
+export interface CrashErrorItem {
+  id: string
+  pageUrl: string // 崩溃时所在的网址
+  timestamp: string // 什么时候崩的
+  duration: string // 页面存活了多久（核心指标）
+  platform: string // 操作系统（Windows/Mac/Android等）
+}
+
+export interface FrameworkErrorItem {
+  id: string
+  message: string
+  componentName: string // 【新增】报错的组件名字
+  componentStack: string // 【新增】React 独特的组件路径
+  stack: string // 原始的 JS 堆栈
+  timestamp: string
+}
+
+export interface JSErrorItem {
+  id: string
+  errorType: 'js_error' | 'unhandled_rejection'
+  message: string
+  stack: string
+  timestamp: string
+}
+
+export interface SeriesItem {
+  name: string
+  type: string
+  smooth: boolean
+  data: number[]
+  itemStyle: {
+    color: string
+  }
+}
+
+export interface TrendData {
+  dates: string[]
+  series: SeriesItem[]
+}
+
 // ============================================
 // 数据转换说明
 // ============================================

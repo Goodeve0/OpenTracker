@@ -24,9 +24,9 @@ import {
   ReloadOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import type { ErrorItem } from '../../types/error'
+import type { ErrorItem, SeriesItem, TrendData } from '../../types/error'
 import ChartWithAdd from '../../components/chart-with-add'
-import { ChartType } from '../../types'
+import { ChartType } from '../../config/chart'
 import { queryStatsData } from '../../api/track'
 import dayjs, { Dayjs } from 'dayjs'
 const { Content } = Layout
@@ -201,21 +201,6 @@ const ErrorOverview = () => {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  interface SeriesItem {
-    name: string
-    type: string
-    smooth: boolean
-    data: number[]
-    itemStyle: {
-      color: string
-    }
-  }
-
-  interface TrendData {
-    dates: string[]
-    series: SeriesItem[]
   }
 
   const updateCharts = (errorTrends: any, errorTopN: any, highErrorPages: any) => {

@@ -3,7 +3,7 @@ import { Card, Spin, Empty } from 'antd'
 import { Pie } from '@ant-design/charts'
 import { PieChartOutlined } from '@ant-design/icons'
 import ChartWithAdd from '../../components/chart-with-add'
-import { ChartType } from '../../types'
+import { ChartType } from '../../config/chart'
 import { queryStatsData } from '../../api/track'
 
 // 客户来源数据类型

@@ -36,40 +36,12 @@ import {
   PauseCircleOutlined,
 } from '@ant-design/icons'
 import { authAPI, UpdateProfileRequest } from '@/api/auth'
-import { projectAPI, ProjectData as ApiProjectData } from '@/api/project'
+import { projectAPI } from '@/api/project'
 import { useUser } from '@/context/UserContext'
+import { UserData, ProjectData } from '../../types/user'
 
 const { Option } = Select
 const { TabPane } = Tabs
-
-// 个人信息数据类型
-interface UserData {
-  id: string
-  username: string
-  gender: '男' | '女' | string
-  age: number
-  email: string
-  telephone_number: string
-  bio: string
-  avatar: string
-}
-
-// 项目数据类型
-interface ProjectData {
-  id: number
-  name: string
-  url: string
-  apiKey: string
-  status: 'running' | 'stopped' | 'pending'
-  createdAt: string
-  updatedAt: string
-  type: string
-  description: string
-  monitorStatus: 'enabled' | 'disabled'
-  userId: number
-  errorCount?: number
-  performanceScore?: number
-}
 
 const UserProfile: React.FC = () => {
   // 使用 UserContext 获取更新用户信息的方法

@@ -1,4 +1,5 @@
-import { DashboardConfig, ChartConfig, ChartType } from '../types'
+import { DashboardConfig, ChartConfig } from '../types'
+import { ChartType } from '../config/chart'
 
 // 本地存储键名
 const STORAGE_KEY = 'opentracker_dashboard_config'

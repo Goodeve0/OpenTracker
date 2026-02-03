@@ -2,14 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Table, Button, Tag, Space, Drawer, Card, message, Spin } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { queryStatsData } from '../../../api/track'
-
-interface JSErrorItem {
-  id: string
-  errorType: 'js_error' | 'unhandled_rejection'
-  message: string
-  stack: string
-  timestamp: string
-}
+import { JSErrorItem } from '../../../types/error'
 
 const JsErrorTable = () => {
   const [visible, setVisible] = useState(false)
