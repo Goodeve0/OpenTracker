@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { Card, Button, Tooltip } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
-import { ChartConfig, ChartType } from '../types'
+import { ChartConfig } from '../types'
+import { ChartType } from '../config/chart'
 import { getDashboardConfig } from '../utils/dashboard-storage'
 
 // 自定义提示组件

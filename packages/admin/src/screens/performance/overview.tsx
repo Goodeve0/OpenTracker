@@ -1,19 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { Row, Col, Card, Layout, Space, Statistic } from 'antd'
+import { Row, Col, Card, Layout, Space } from 'antd'
 import ChartWithAdd from '../../components/chart-with-add'
-import { ChartType } from '../../types'
+import { ChartType } from '../../config/chart'
 import { queryStatsData } from '../../api/track'
-
-type CoreVitals = { lcp?: number | null; inp?: number | null; cls?: number | null }
-type LoadingPerf = {
-  ttfb?: number | null
-  fp?: number | null
-  fcp?: number | null
-  dcl?: number | null
-  load?: number | null
-}
-type NetworkPerf = { dns?: number | null; tcp?: number | null }
-type RuntimePerf = { longTask?: number | null; fps?: number | null; resourceLoad?: number | null }
+import { CoreVitals, LoadingPerf, NetworkPerf, RuntimePerf } from '../../types/performance'
 
 const { Content } = Layout
 
@@ -443,33 +433,41 @@ const PerformancePage: React.FC = () => {
           <Row gutter={16}>
             <Col span={6}>
               <Card title="核心 Web Vitals">
-                <p>LCP: {fmtMs(core.lcp)}</p>
-                <p>INP: {fmtMs(core.inp)}</p>
-                <p>CLS: {core.cls != null ? String(core.cls) : '—'}</p>
+                <div style={{ height: 150, overflowY: 'auto' }}>
+                  <p>LCP: {fmtMs(core.lcp)}</p>
+                  <p>INP: {fmtMs(core.inp)}</p>
+                  <p>CLS: {core.cls != null ? String(core.cls) : '—'}</p>
+                </div>
               </Card>
             </Col>
             <Col span={6}>
               <Card title="加载性能">
-                <p>TTFB: {fmtMs(loading.ttfb)}</p>
-                <p>FCP: {fmtMs(loading.fcp ?? loading.fp)}</p>
-                <p>DCL: {fmtMs(loading.dcl)}</p>
-                <p>Load: {fmtMs(loading.load)}</p>
+                <div style={{ height: 150, overflowY: 'auto' }}>
+                  <p>TTFB: {fmtMs(loading.ttfb)}</p>
+                  <p>FCP: {fmtMs(loading.fcp ?? loading.fp)}</p>
+                  <p>DCL: {fmtMs(loading.dcl)}</p>
+                  <p>Load: {fmtMs(loading.load)}</p>
+                </div>
               </Card>
             </Col>
             <Col span={6}>
               <Card title="网络">
-                <p>DNS: {fmtMs(network.dns)}</p>
-                <p>TCP: {fmtMs(network.tcp)}</p>
+                <div style={{ height: 150, overflowY: 'auto' }}>
+                  <p>DNS: {fmtMs(network.dns)}</p>
+                  <p>TCP: {fmtMs(network.tcp)}</p>
+                </div>
               </Card>
             </Col>
             <Col span={6}>
               <Card title="运行时">
-                <p>
-                  长任务 (ms):{' '}
-                  {runtime.longTask != null ? Math.round(runtime.longTask as number) : '—'}
-                </p>
-                <p>FPS: {runtime.fps != null ? Math.round(runtime.fps as number) : '—'}</p>
-                <p>资源平均耗时: {fmtMs(runtime.resourceLoad)}</p>
+                <div style={{ height: 150, overflowY: 'auto' }}>
+                  <p>
+                    长任务 (ms):{' '}
+                    {runtime.longTask != null ? Math.round(runtime.longTask as number) : '—'}
+                  </p>
+                  <p>FPS: {runtime.fps != null ? Math.round(runtime.fps as number) : '—'}</p>
+                  <p>资源平均耗时: {fmtMs(runtime.resourceLoad)}</p>
+                </div>
               </Card>
             </Col>
           </Row>

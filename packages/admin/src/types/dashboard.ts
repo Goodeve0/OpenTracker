@@ -1,19 +1,4 @@
-// 定义图表类型枚举
-export enum ChartType {
-  VISITOR_TRENDS = 'visitorTrends',
-  VISITOR_DEVICE = 'visitorDevice',
-  BEHAVIOR_EVENTS = 'behaviorEvents',
-  BEHAVIOR_PAGE_VIEWS = 'behaviorPageViews',
-  CUSTOMER_GROWTH = 'customerGrowth',
-  CUSTOMER_SOURCE = 'customerSource',
-  ERROR_TRENDS = 'errorTrends',
-  ERROR_TYPE = 'errorType',
-  PERFORMANCE_OVERVIEW = 'performanceOverview',
-  WHITE_SCREEN_TRENDS = 'whiteScreenTrends',
-  WHITE_SCREEN_TOP_PAGES = 'whiteScreenTopPages',
-  HIGH_ERROR_PAGES = 'highErrorPages',
-  PERFORMANCE_TRENDS = 'performanceTrends',
-}
+import { ChartType } from '../config/chart'
 
 // 定义图表基础配置
 export interface ChartConfig {

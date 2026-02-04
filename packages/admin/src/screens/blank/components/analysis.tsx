@@ -19,38 +19,14 @@ import {
 import { RedoOutlined } from '@ant-design/icons'
 import BlankDetail from './blank-details'
 import ChartWithAdd from '../../../components/chart-with-add'
-import { ChartType } from '../../../types'
+import { ChartType } from '../../../config/chart'
+import { STATUS_OPTIONS } from '../../../config/blank'
+import { BlankListItem, WhiteScreenTrendData } from '../../../types/blank'
 import { queryBlankData, queryStatsData } from '../../../api/track'
 import dayjs from 'dayjs'
 
 const { Title } = Typography
 const { Content } = Layout
-
-interface BlankListItem {
-  key: string
-  page: string
-  blankCounts: number
-  users: number
-  time: string
-  state: 'NEW' | 'OPEN' | 'FIXED' | 'CLOSE'
-  option: string
-}
-
-interface WhiteScreenTrendData {
-  date: string
-  whiteScreenCount: number
-  affectedUserCount: number
-  whiteScreenRate: number
-  affectedUserRate: number
-}
-
-const statusOptions = [
-  { label: '全部', value: 'all' },
-  { label: 'NEW', value: 'NEW' },
-  { label: 'OPEN', value: 'OPEN' },
-  { label: 'FIXED', value: 'FIXED' },
-  { label: 'CLOSED', value: 'CLOSED' },
-]
 
 const convertDecimalToPercent = (decimal: number) => {
   if (typeof decimal !== 'number' || isNaN(decimal)) {
@@ -343,7 +319,7 @@ const BlankOverview: React.FC = () => {
                   placeholder="请选择状态"
                   style={{ width: 120 }}
                   onChange={handleChange}
-                  options={statusOptions}
+                  options={STATUS_OPTIONS}
                 />
               </Space.Compact>
               <Button icon={<RedoOutlined />} loading={loading} onClick={handleRefresh} />

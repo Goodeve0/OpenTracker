@@ -2,18 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Table, Button, Tag, Space, Drawer, Descriptions, message, Spin } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { queryStatsData } from '../../../api/track'
+import { ApiErrorItem } from '../../../types/error'
 
 // 1. 定义数据契约
-interface ApiErrorItem {
-  id: string
-  url: string // 请求地址
-  method: string // GET, POST, PUT 等
-  status: number // 状态码: 200, 404, 500, 0(跨域/断网)
-  duration: number // 耗时 (毫秒)
-  requestBody: string // 发送了什么给后端
-  responseBody: string // 后端返回了什么报错
-  timestamp: string
-}
 
 const ApiErrorTable = () => {
   const [visible, setVisible] = useState(false)

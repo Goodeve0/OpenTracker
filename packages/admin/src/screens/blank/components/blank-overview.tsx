@@ -19,7 +19,7 @@ import {
 import { RedoOutlined } from '@ant-design/icons'
 import BlankDetail from './blank-details'
 import ChartWithAdd from '../../../components/chart-with-add'
-import { ChartType } from '../../../types'
+import { ChartType } from '../../../config/chart'
 import { queryBlankData, queryStatsData } from '../../../api/track'
 import dayjs from 'dayjs'
 

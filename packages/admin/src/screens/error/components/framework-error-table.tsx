@@ -4,19 +4,12 @@ import { Table, Button, Tag, Space, Drawer, Typography, message, Spin } from 'an
 import { CodeOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { queryStatsData } from '../../../api/track'
+import { FrameworkErrorItem } from '../../../types/error'
 
 const { Text } = Typography
 
 // 1. 定义数据契约
 // 注意：这里比刚才多了 componentName 和 componentStack
-interface FrameworkErrorItem {
-  id: string
-  message: string
-  componentName: string // 【新增】报错的组件名字
-  componentStack: string // 【新增】React 独特的组件路径
-  stack: string // 原始的 JS 堆栈
-  timestamp: string
-}
 
 const FrameworkErrorTable = () => {
   const [visible, setVisible] = useState(false)
